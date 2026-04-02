@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  frontend:
+    build: .
+    image: loja306:latest
+    container_name: loja306
+    environment:
+      - NODE_ENV=production
+      - DEBUG=false
+    expose:
+      - 80
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.loja306.rule=Host(`www.amordapatria.com.br`)"
+        - "traefik.http.routers.loja306.entrypoints=websecure"
+        - "traefik.http.routers.loja306.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.loja306.loadbalancer.server.port=80"
+        - "traefik.http.routers.loja306.priority=1"
+        - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+        - "traefik.http.services.loja306.loadbalancer.passHostHeader=true"
+        - "traefik.http.routers.loja306.middlewares=sslheader"
+    networks:
+      - rede_mibi
+
+networks:
+  rede_mibi:
+    external: true
