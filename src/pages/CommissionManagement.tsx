@@ -16,7 +16,7 @@ const tabs: { key: TabKey; label: string; disabled?: boolean }[] = [
   { key: 'executive', label: 'Painel Executivo' },
   { key: 'indicators', label: 'Indicadores por Área' },
   { key: 'reports', label: 'Relatórios' },
-  { key: 'auditoria', label: 'Auditoria', disabled: true },
+  { key: 'auditoria', label: 'Auditoria' },
   { key: 'cargo', label: 'Entrega de Cargo' },
   { key: 'history', label: 'Histórico de Gestões' },
 ];

@@ -96,7 +96,7 @@ export const Navigation: React.FC = () => {
     icon: HeartHandshake
   }, {
     href: '/commission/management',
-    label: 'Gestão',
+    label: 'Gestão Veneravel',
     icon: Gauge
   }];
 
