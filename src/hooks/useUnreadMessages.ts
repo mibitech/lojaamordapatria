@@ -52,37 +52,6 @@ export const useUnreadMessages = () => {
 
   useEffect(() => {
     fetchUnreadCount();
-
-    // Subscribe to changes in messages and message_reads
-    const messagesChannel = supabase
-      .channel('messages-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'message_reads'
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(messagesChannel);
-    };
   }, [user, isMember]);
 
   return { unreadCount, loading, refreshUnreadCount: fetchUnreadCount };

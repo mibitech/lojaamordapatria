@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, 
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 export const Navigation: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     user,
     fullName,
@@ -158,8 +159,8 @@ export const Navigation: React.FC = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg">
-                      {memberNavItems.map(item => <DropdownMenuItem key={item.href} asChild>
-                          <Link to={item.href} className="flex items-center justify-between w-full">
+                      {memberNavItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
+                          <div className="flex items-center justify-between w-full">
                             <div className="flex items-center">
                               <item.icon className="w-4 h-4 mr-2" />
                               {item.label}
@@ -170,7 +171,7 @@ export const Navigation: React.FC = () => {
                                   {unreadCount}
                                 </span>
                               </div>}
-                          </Link>
+                          </div>
                         </DropdownMenuItem>)}
                     </DropdownMenuContent>
                   </DropdownMenu>}
@@ -185,19 +186,19 @@ export const Navigation: React.FC = () => {
                       </DropdownMenuTrigger>
                      <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg">
                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Portal</div>
-                       {commissionPortalItems.map(item => <DropdownMenuItem key={item.href} asChild>
-                           <Link to={item.href} className="flex items-center">
+                       {commissionPortalItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
+                           <div className="flex items-center">
                              <item.icon className="w-4 h-4 mr-2" />
                              {item.label}
-                           </Link>
+                           </div>
                          </DropdownMenuItem>)}
                        <DropdownMenuSeparator />
                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Corpo Diretivo</div>
-                       {commissionDiretivoItems.map(item => <DropdownMenuItem key={item.href} asChild>
-                           <Link to={item.href} className="flex items-center">
+                       {commissionDiretivoItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
+                           <div className="flex items-center">
                              <item.icon className="w-4 h-4 mr-2" />
                              {item.label}
-                           </Link>
+                           </div>
                          </DropdownMenuItem>)}
                      </DropdownMenuContent>
                    </DropdownMenu>}
@@ -211,11 +212,9 @@ export const Navigation: React.FC = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-background border shadow-lg">
-                      <DropdownMenuItem asChild>
-                        <Link to="/profile" className="flex items-center">
-                          <User className="w-4 h-4 mr-2" />
-                          Perfil
-                        </Link>
+                      <DropdownMenuItem onClick={() => navigate('/profile')}>
+                        <User className="w-4 h-4 mr-2" />
+                        Perfil
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={signOut}>
