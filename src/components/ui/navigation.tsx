@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, GraduationCap, Settings, FileText, DollarSign, ClipboardList, Briefcase, BookOpen, Inbox, Lightbulb, Beer, MessageSquare, Bell, HeartHandshake, Gauge } from 'lucide-react';
+import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, GraduationCap, Settings, FileText, DollarSign, ClipboardList, Briefcase, BookOpen, Inbox, Lightbulb, Beer, MessageSquare, Bell, HeartHandshake, Gauge, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 export const Navigation: React.FC = () => {
   const location = useLocation();
@@ -23,6 +23,7 @@ export const Navigation: React.FC = () => {
     unreadCount
   } = useUnreadMessages();
   const [isOpen, setIsOpen] = useState(false);
+  const [expandMemberMenu, setExpandMemberMenu] = useState(false);
   const hasAnyRole = isMember || isCommissionMember;
 
   // Extrair primeiro nome
@@ -263,21 +264,38 @@ export const Navigation: React.FC = () => {
 
                   {/* Member Navigation - Only show when user is a member */}
                   {isMember && <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-muted-foreground">Área dos Irmãos</h3>
-                      {memberNavItems.map(item => <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
-                          <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-between">
-                            <div className="flex items-center">
-                              <item.icon className="w-4 h-4 mr-2" />
-                              {item.label}
-                            </div>
-                            {item.href === '/members/messages' && unreadCount > 0 && <div className="flex items-center gap-1">
-                                <Bell className="w-4 h-4" />
-                                <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
-                                  {unreadCount}
-                                </span>
-                              </div>}
-                          </Button>
-                        </Link>)}
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between"
+                        onClick={() => setExpandMemberMenu(!expandMemberMenu)}
+                      >
+                        <div className="flex items-center">
+                          <Shield className="w-4 h-4 mr-2" />
+                          <span className="text-sm font-semibold">Área dos Irmãos</span>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform ${expandMemberMenu ? 'rotate-180' : ''}`}
+                        />
+                      </Button>
+                      {expandMemberMenu && <div className="space-y-1 pl-4 border-l-2 border-muted-foreground/30">
+                        {memberNavItems.map(item => <Link key={item.href} to={item.href} onClick={() => {
+                            setIsOpen(false);
+                            setExpandMemberMenu(false);
+                          }}>
+                            <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-between text-sm">
+                              <div className="flex items-center">
+                                <item.icon className="w-4 h-4 mr-2" />
+                                {item.label}
+                              </div>
+                              {item.href === '/members/messages' && unreadCount > 0 && <div className="flex items-center gap-1">
+                                  <Bell className="w-4 h-4" />
+                                  <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
+                                    {unreadCount}
+                                  </span>
+                                </div>}
+                            </Button>
+                          </Link>)}
+                      </div>}
                     </div>}
 
                    {/* Commission Navigation - Only show when user is a commission member */}
