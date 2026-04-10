@@ -2,12 +2,14 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copiar arquivos de dependências
-COPY package*.json ./
-COPY bun.lockb ./
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
 
-# Instalar dependências
-RUN npm ci 
+# Copiar arquivos de dependências
+COPY package.json pnpm-lock.yaml ./
+
+# Instalar dependências com pnpm (frozen-lockfile garante versões exatas)
+RUN pnpm install --frozen-lockfile 
 
 # Copiar código fonte
 COPY . .
@@ -16,7 +18,7 @@ COPY . .
 COPY .env .env
 
 # Build da aplicação
-RUN npm run build
+RUN pnpm build
 
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
