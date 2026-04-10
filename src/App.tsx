@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { Navigation } from "@/components/ui/navigation";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import About from "./pages/About";
@@ -48,8 +48,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AppLayout>
-            <Routes>
+          <Navigation />
+          <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
@@ -79,8 +79,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
