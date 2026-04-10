@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, GraduationCap, Settings, FileText, DollarSign, ClipboardList, Briefcase, BookOpen, Inbox, Lightbulb, Beer, MessageSquare, Bell, HeartHandshake, Gauge } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 export const Navigation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -30,19 +31,24 @@ export const Navigation: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
   const publicNavItems = [{
     href: '/',
-    label: 'Início'
+    label: 'Início',
+    icon: Users
   }, {
     href: '/about',
-    label: 'Sobre Nós'
+    label: 'Sobre Nós',
+    icon: Book
   }, {
     href: '/activities',
-    label: 'Atividades'
+    label: 'Atividades',
+    icon: Calendar
   }, {
     href: '/events',
-    label: 'Eventos'
+    label: 'Eventos',
+    icon: Users
   }, {
     href: '/contact',
-    label: 'Contato'
+    label: 'Contato',
+    icon: MessageSquare
   }];
   const memberNavItems = [{
     href: '/members/messages',
@@ -119,129 +125,208 @@ export const Navigation: React.FC = () => {
         </div>
       </nav>;
   }
-  return <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-b border-border shadow-soft">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
-              <Triangle className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div className="hidden sm:flex flex-col">
-              <span className="font-bold text-xl text-primary">Amor da Pátria </span>
-              <span className="text-sm text-muted-foreground">Loja Maçonica</span>
-            </div>
-            <div className="flex sm:hidden flex-col items-center">
-              <span className="font-bold text-lg text-primary">Loja Maçonica</span>
-              <span className="text-xs text-muted-foreground">Amor da Pátria</span>
-            </div>
-          </Link>
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-1">
-            {publicNavItems.map(item => <Link key={item.href} to={item.href}>
-                <Button variant={isActive(item.href) ? "default" : "ghost"} size="sm" className="transition-smooth">
-                  {item.label}
-                </Button>
-              </Link>)}
-          </div>
+  return (
+    <>
+      {/* Header Navigation */}
+      <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 border-b border-border shadow-soft">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
+                <Triangle className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <div className="hidden sm:flex flex-col">
+                <span className="font-bold text-xl text-primary">Amor da Pátria </span>
+                <span className="text-sm text-muted-foreground">Loja Maçonica</span>
+              </div>
+              <div className="flex sm:hidden flex-col items-center">
+                <span className="font-bold text-lg text-primary">Loja Maçonica</span>
+                <span className="text-xs text-muted-foreground">Amor da Pátria</span>
+              </div>
+            </Link>
 
-          {/* Desktop Auth Section */}
-          <div className="hidden lg:flex items-center space-x-2">
-            <ThemeToggle />
-            {user ? <>
-                {/* Member Navigation - Only show when user is a member */}
-                {isMember && <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Shield className="w-4 h-4 mr-1" />
-                        Área dos Irmãos
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg">
-                      {memberNavItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center">
-                              <item.icon className="w-4 h-4 mr-2" />
-                              {item.label}
-                            </div>
-                            {item.href === '/members/messages' && unreadCount > 0 && <div className="flex items-center gap-1">
-                                <Bell className="w-4 h-4" />
-                                <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
-                                  {unreadCount}
-                                </span>
-                              </div>}
+            {/* Desktop Navigation Links */}
+            <div className="hidden lg:flex items-center space-x-1">
+              {publicNavItems.map(item => <Link key={item.href} to={item.href}>
+                  <Button variant={isActive(item.href) ? "default" : "ghost"} size="sm" className="transition-smooth">
+                    {item.label}
+                  </Button>
+                </Link>)}
+            </div>
+
+            {/* Mobile Navigation Links - Conditional based on auth */}
+            <div className="flex lg:hidden items-center space-x-2">
+              {user && isMember ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Shield className="w-4 h-4 mr-1" />
+                      <span className="text-xs">Irmãos</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 bg-background border shadow-lg">
+                    {memberNavItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center">
+                            <item.icon className="w-4 h-4 mr-2" />
+                            <span className="text-xs">{item.label}</span>
                           </div>
-                        </DropdownMenuItem>)}
-                    </DropdownMenuContent>
-                  </DropdownMenu>}
+                          {item.href === '/members/messages' && unreadCount > 0 && <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-1.5 py-0.5">
+                              {unreadCount}
+                            </span>}
+                        </div>
+                      </DropdownMenuItem>)}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : !user ? (
+                <div className="flex gap-1">
+                  {publicNavItems.slice(0, 2).map(item => <Link key={item.href} to={item.href}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <item.icon className="w-4 h-4" />
+                      </Button>
+                    </Link>)}
+                </div>
+              ) : null}
+            </div>
 
-                 {/* Commission Navigation - Only show when user is a commission member */}
-                  {isCommissionMember && <DropdownMenu>
+            {/* Mobile Auth Section - Top Right */}
+            <div className="flex lg:hidden items-center space-x-1">
+              <ThemeToggle />
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <User className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background border shadow-lg">
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <User className="w-4 h-4 mr-2" />
+                      <span className="text-xs">Perfil</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      <span className="text-xs">Sair</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link to="/auth">
+                  <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-smooth h-8 text-xs">
+                    Entrar
+                  </Button>
+                </Link>
+              )}
+            </div>
+
+            {/* Desktop Auth Section */}
+            <div className="hidden lg:flex items-center space-x-2">
+              <ThemeToggle />
+              {user ? <>
+                  {/* Member Navigation - Only show when user is a member */}
+                  {isMember && <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm">
-                          <Settings className="w-4 h-4 mr-1" />
-                          Área Restrita
+                          <Shield className="w-4 h-4 mr-1" />
+                          Área dos Irmãos
                         </Button>
                       </DropdownMenuTrigger>
-                     <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg">
-                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Portal</div>
-                       {commissionPortalItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
-                           <div className="flex items-center">
-                             <item.icon className="w-4 h-4 mr-2" />
-                             {item.label}
-                           </div>
-                         </DropdownMenuItem>)}
-                       <DropdownMenuSeparator />
-                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Corpo Diretivo</div>
-                       {commissionDiretivoItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
-                           <div className="flex items-center">
-                             <item.icon className="w-4 h-4 mr-2" />
-                             {item.label}
-                           </div>
-                         </DropdownMenuItem>)}
-                     </DropdownMenuContent>
-                   </DropdownMenu>}
+                      <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg">
+                        {memberNavItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center">
+                                <item.icon className="w-4 h-4 mr-2" />
+                                {item.label}
+                              </div>
+                              {item.href === '/members/messages' && unreadCount > 0 && <div className="flex items-center gap-1">
+                                  <Bell className="w-4 h-4" />
+                                  <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
+                                    {unreadCount}
+                                  </span>
+                                </div>}
+                            </div>
+                          </DropdownMenuItem>)}
+                      </DropdownMenuContent>
+                    </DropdownMenu>}
 
-                {/* User Menu */}
-                {hasAnyRole ? <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <User className="w-4 h-4 mr-1" />
-                        {firstName}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-background border shadow-lg">
-                      <DropdownMenuItem onClick={() => navigate('/profile')}>
-                        <User className="w-4 h-4 mr-2" />
-                        Perfil
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={signOut}>
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sair
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu> : <Button variant="ghost" size="sm" onClick={signOut}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sair
-                  </Button>}
-              </> : <Link to="/auth">
-                <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-smooth">
-                  Entrar
-                </Button>
-              </Link>}
+                   {/* Commission Navigation - Only show when user is a commission member */}
+                    {isCommissionMember && <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Settings className="w-4 h-4 mr-1" />
+                            Área Restrita
+                          </Button>
+                        </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg">
+                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Portal</div>
+                         {commissionPortalItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
+                             <div className="flex items-center">
+                               <item.icon className="w-4 h-4 mr-2" />
+                               {item.label}
+                             </div>
+                           </DropdownMenuItem>)}
+                         <DropdownMenuSeparator />
+                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Corpo Diretivo</div>
+                         {commissionDiretivoItems.map(item => <DropdownMenuItem key={item.href} onClick={() => navigate(item.href)}>
+                             <div className="flex items-center">
+                               <item.icon className="w-4 h-4 mr-2" />
+                               {item.label}
+                             </div>
+                           </DropdownMenuItem>)}
+                       </DropdownMenuContent>
+                     </DropdownMenu>}
+
+                  {/* User Menu */}
+                  {hasAnyRole ? <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <User className="w-4 h-4 mr-1" />
+                          {firstName}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-background border shadow-lg">
+                        <DropdownMenuItem onClick={() => navigate('/profile')}>
+                          <User className="w-4 h-4 mr-2" />
+                          Perfil
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={signOut}>
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Sair
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu> : <Button variant="ghost" size="sm" onClick={signOut}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sair
+                    </Button>}
+                </> : <Link to="/auth">
+                  <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-smooth">
+                    Entrar
+                  </Button>
+                </Link>}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Bottom Navigation - Only shown on small screens */}
+      <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border shadow-lg z-40">
+        <div className="flex items-center justify-between px-4 h-16">
+          {/* Additional Actions - Left Side */}
+          <div className="flex items-center gap-2">
+            {/* Can add more navigation items here if needed */}
           </div>
 
-          {/* Mobile Menu */}
-          <div className="lg:hidden flex items-center gap-1">
-            <ThemeToggle />
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
+          {/* Menu Hamburger - Right Side */}
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
               <SheetContent side="right" className="w-80 bg-background overflow-y-auto max-h-screen">
                 <SheetHeader>
                   <SheetTitle className="text-left">Menu</SheetTitle>
@@ -249,7 +334,7 @@ export const Navigation: React.FC = () => {
                     Navegue pelas seções do site
                   </SheetDescription>
                 </SheetHeader>
-                
+
                 <div className="mt-6 space-y-4">
                   {/* Public Navigation */}
                   <div className="space-y-2">
@@ -263,41 +348,41 @@ export const Navigation: React.FC = () => {
 
                   {/* Member Navigation - Only show when user is a member */}
                   {isMember && <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-muted-foreground">Área dos Irmãos</h3>
-                      {memberNavItems.map(item => <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
-                          <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-between">
-                            <div className="flex items-center">
-                              <item.icon className="w-4 h-4 mr-2" />
-                              {item.label}
-                            </div>
-                            {item.href === '/members/messages' && unreadCount > 0 && <div className="flex items-center gap-1">
-                                <Bell className="w-4 h-4" />
-                                <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
-                                  {unreadCount}
-                                </span>
-                              </div>}
-                          </Button>
-                        </Link>)}
-                    </div>}
+                    <h3 className="text-sm font-semibold text-muted-foreground">Área dos Irmãos</h3>
+                    {memberNavItems.map(item => <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
+                        <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-between">
+                          <div className="flex items-center">
+                            <item.icon className="w-4 h-4 mr-2" />
+                            {item.label}
+                          </div>
+                          {item.href === '/members/messages' && unreadCount > 0 && <div className="flex items-center gap-1">
+                              <Bell className="w-4 h-4" />
+                              <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
+                                {unreadCount}
+                              </span>
+                            </div>}
+                        </Button>
+                      </Link>)}
+                  </div>}
 
-                   {/* Commission Navigation - Only show when user is a commission member */}
-                    {isCommissionMember && <div className="space-y-2">
-                        <h3 className="text-sm font-semibold text-muted-foreground">Área Restrita — Portal</h3>
-                        {commissionPortalItems.map(item => <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
-                           <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-start">
-                             <item.icon className="w-4 h-4 mr-2" />
-                             {item.label}
-                           </Button>
-                         </Link>)}
-                        <div className="border-t border-border my-2" />
-                        <h3 className="text-sm font-semibold text-muted-foreground">Corpo Diretivo</h3>
-                        {commissionDiretivoItems.map(item => <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
-                           <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-start">
-                             <item.icon className="w-4 h-4 mr-2" />
-                             {item.label}
-                           </Button>
-                         </Link>)}
-                     </div>}
+                  {/* Commission Navigation - Only show when user is a commission member */}
+                  {isCommissionMember && <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-muted-foreground">Área Restrita — Portal</h3>
+                    {commissionPortalItems.map(item => <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
+                       <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-start">
+                         <item.icon className="w-4 h-4 mr-2" />
+                         {item.label}
+                       </Button>
+                     </Link>)}
+                    <div className="border-t border-border my-2" />
+                    <h3 className="text-sm font-semibold text-muted-foreground">Corpo Diretivo</h3>
+                    {commissionDiretivoItems.map(item => <Link key={item.href} to={item.href} onClick={() => setIsOpen(false)}>
+                       <Button variant={isActive(item.href) ? "default" : "ghost"} className="w-full justify-start">
+                         <item.icon className="w-4 h-4 mr-2" />
+                         {item.label}
+                       </Button>
+                     </Link>)}
+                  </div>}
 
                    {/* Auth Section */}
                   <div className="space-y-2 pt-4 border-t">
@@ -328,7 +413,10 @@ export const Navigation: React.FC = () => {
               </SheetContent>
             </Sheet>
           </div>
-        </div>
-      </div>
-    </nav>;
+        </nav>
+
+      {/* Spacing para não cobrir conteúdo quando há bottom navbar */}
+      <div className="h-16 lg:hidden"></div>
+    </>
+  );
 };
