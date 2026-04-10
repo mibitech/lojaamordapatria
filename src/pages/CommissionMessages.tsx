@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,18 +34,26 @@ interface Profile {
 
 export default function CommissionMessages() {
   const { user, isCommissionMember } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [members, setMembers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     recipient_id: 'all',
   });
+
+  useEffect(() => {
+    // Redirect to home if user is not a commission member
+    if (!isCommissionMember && !loading) {
+      navigate('/');
+    }
+  }, [isCommissionMember, loading, navigate]);
 
   useEffect(() => {
     if (isCommissionMember) {

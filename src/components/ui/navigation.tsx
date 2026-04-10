@@ -6,11 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, GraduationCap, Settings, FileText, DollarSign, ClipboardList, Briefcase, BookOpen, Inbox, Lightbulb, Beer, MessageSquare, Bell, HeartHandshake, Gauge } from 'lucide-react';
+import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, GraduationCap, Settings, FileText, DollarSign, ClipboardList, Briefcase, BookOpen, Inbox, Lightbulb, Beer, MessageSquare, Bell, HeartHandshake, Gauge, Home } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 export const Navigation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
   const {
     user,
     fullName,
@@ -19,9 +21,26 @@ export const Navigation: React.FC = () => {
     signOut,
     loading
   } = useAuth();
+
   const {
     unreadCount
   } = useUnreadMessages();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // Reload the entire page to reset everything and go to home
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Even on error, redirect to home
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
+    }
+  };
   const [isOpen, setIsOpen] = useState(false);
   const hasAnyRole = isMember || isCommissionMember;
 
@@ -30,19 +49,24 @@ export const Navigation: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
   const publicNavItems = [{
     href: '/',
-    label: 'Início'
+    label: 'Início',
+    icon: Home
   }, {
     href: '/about',
-    label: 'Sobre Nós'
+    label: 'Sobre Nós',
+    icon: Book
   }, {
     href: '/activities',
-    label: 'Atividades'
+    label: 'Atividades',
+    icon: Calendar
   }, {
     href: '/events',
-    label: 'Eventos'
+    label: 'Eventos',
+    icon: Users
   }, {
     href: '/contact',
-    label: 'Contato'
+    label: 'Contato',
+    icon: MessageSquare
   }];
   const memberNavItems = [{
     href: '/members/messages',
@@ -119,9 +143,11 @@ export const Navigation: React.FC = () => {
         </div>
       </nav>;
   }
-  return <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-b border-border shadow-soft">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+  return (
+    <>
+      <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-b border-border shadow-soft">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
@@ -236,6 +262,41 @@ export const Navigation: React.FC = () => {
           {/* Mobile Menu */}
           <div className="lg:hidden flex items-center gap-1">
             <ThemeToggle />
+
+            {/* Mobile Account Menu */}
+            {user ? (
+              hasAnyRole ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <User className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background border shadow-lg">
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <User className="w-4 h-4 mr-2" />
+                      Perfil
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              )
+            ) : (
+              <Link to="/auth">
+                <Button size="sm" className="bg-gradient-primary hover:opacity-90">
+                  Entrar
+                </Button>
+              </Link>
+            )}
+
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -312,7 +373,7 @@ export const Navigation: React.FC = () => {
                             </Link>
                           </>}
                         <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive" onClick={() => {
-                      signOut();
+                      handleSignOut();
                       setIsOpen(false);
                     }}>
                           <LogOut className="w-4 h-4 mr-2" />
@@ -329,6 +390,40 @@ export const Navigation: React.FC = () => {
             </Sheet>
           </div>
         </div>
-      </div>
-    </nav>;
+        </div>
+      </nav>
+
+      {/* Mobile Bottom Navigation - Only show when logged in */}
+      {isMember && (
+        <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border shadow-lg z-40">
+          <div className="flex items-center justify-around h-16">
+            {memberNavItems.map(item => (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>
+                  <Link to={item.href}>
+                    <Button
+                      variant={isActive(item.href) ? "default" : "ghost"}
+                      size="icon"
+                      className="relative"
+                    >
+                      <item.icon className="w-5 h-5" />
+                      {item.href === '/members/messages' && unreadCount > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="top">{item.label}</TooltipContent>
+              </Tooltip>
+            ))}
+        </div>
+      </nav>
+      )}
+
+      {/* Spacing to prevent content overlap */}
+      {isMember && <div className="h-16 lg:hidden"></div>}
+    </>
+  );
 };

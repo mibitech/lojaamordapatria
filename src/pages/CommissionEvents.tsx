@@ -129,7 +129,7 @@ const CommissionEvents: React.FC = () => {
   };
 
   const filteredAndSortedEvents = useMemo(() => {
-    let filtered = events.filter((event) => {
+    const filtered = events.filter((event) => {
       const matchesSearch =
         event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||

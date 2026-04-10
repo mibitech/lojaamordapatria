@@ -148,7 +148,7 @@ const CommissionProfiles: React.FC = () => {
   ];
 
   const filteredAndSortedProfiles = useMemo(() => {
-    let filtered = profiles.filter((profile) => {
+    const filtered = profiles.filter((profile) => {
       const matchesSearch =
         profile.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         profile.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||

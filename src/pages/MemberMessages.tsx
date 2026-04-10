@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,12 +23,20 @@ interface Message {
 
 export default function MemberMessages() {
   const { user, isMember } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { refreshUnreadCount } = useUnreadMessages();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    // Redirect to home if user is not a member
+    if (!isMember && !loading) {
+      navigate('/');
+    }
+  }, [isMember, loading, navigate]);
 
   useEffect(() => {
     if (isMember && user) {

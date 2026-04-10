@@ -120,7 +120,7 @@ const CommissionCopoDagua: React.FC = () => {
   const calculatedDayOfWeek = getDayOfWeek(eventDate);
 
   const filteredAndSortedEvents = useMemo(() => {
-    let filtered = events.filter((event) => {
+    const filtered = events.filter((event) => {
       const matchesSearch =
         event.month.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.session_type.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -127,7 +127,7 @@ const CommissionActivities: React.FC = () => {
   }, [activities]);
 
   const filteredAndSortedActivities = useMemo(() => {
-    let filtered = activities.filter((activity) => {
+    const filtered = activities.filter((activity) => {
       const matchesSearch =
         activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         activity.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||

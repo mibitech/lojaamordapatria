@@ -105,7 +105,7 @@ const CommissionMasters: React.FC = () => {
   const endDate = watch('term_end_date');
 
   const filteredAndSortedMasters = useMemo(() => {
-    let filtered = masters.filter((master) => {
+    const filtered = masters.filter((master) => {
       const matchesSearch =
         master.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         master.installation_year.toString().includes(searchTerm);
