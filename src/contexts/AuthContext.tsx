@@ -203,11 +203,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Then sign out from Supabase
       await supabase.auth.signOut();
-      
+
       toast({
         title: "Sessão encerrada",
         description: "Você saiu da área restrita com sucesso.",
       });
+
+      window.location.href = '/';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       // Even if there's an error, clear the state
@@ -219,12 +221,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsCommissionMember(false);
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('sb-bvrvhjxcqsjvrcdaffly-auth-token');
-      
+
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao encerrar a sessão.",
         variant: "destructive"
       });
+
+      window.location.href = '/';
     }
   };
 
