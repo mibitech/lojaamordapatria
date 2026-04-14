@@ -97,7 +97,7 @@ const MemberAgenda: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          <Carousel className="w-full">
+          <Carousel className="w-full px-10 md:px-0">
             <CarouselContent>
               {events.map((event) => (
                 <CarouselItem key={event.id} className="md:basis-1/2 lg:basis-1/3">
@@ -161,8 +161,8 @@ const MemberAgenda: React.FC = () => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious className="left-0 md:-left-12" />
+            <CarouselNext className="right-0 md:-right-12" />
           </Carousel>
         )}
       </div>
