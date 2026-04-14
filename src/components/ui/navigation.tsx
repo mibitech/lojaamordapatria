@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, GraduationCap, Settings, FileText, DollarSign, ClipboardList, Briefcase, BookOpen, Inbox, Lightbulb, Beer, MessageSquare, Bell, HeartHandshake, Gauge, Home } from 'lucide-react';
+import { User, LogOut, Shield, Book, Users, Calendar, Crown, Menu, X, Triangle, GraduationCap, Settings, FileText, DollarSign, ClipboardList, Briefcase, BookOpen, Inbox, Lightbulb, GlassWater, MessageSquare, Bell, HeartHandshake, Gauge, Home } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 export const Navigation: React.FC = () => {
@@ -73,13 +73,13 @@ export const Navigation: React.FC = () => {
     label: 'Caixa Postal',
     icon: Inbox
   }, {
-    href: '/members/agenda',
-    label: 'Copo D\'água',
-    icon: Beer
-  }, {
     href: '/members/study-time',
     label: 'Tempo de Estudos',
     icon: GraduationCap
+  }, {
+    href: '/members/agenda',
+    label: 'Copo D\'água',
+    icon: GlassWater
   }, {
     href: '/education',
     label: 'Acervos',
@@ -422,8 +422,6 @@ export const Navigation: React.FC = () => {
       </nav>
       )}
 
-      {/* Spacing to prevent content overlap */}
-      {isMember && <div className="h-16 lg:hidden"></div>}
     </>
   );
 };
