@@ -1,163 +1,461 @@
-# CLAUDE.md
+# Loja Amor da Pátria — CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **Fonte da verdade:** `docs/prd.md` · `docs/backlog.md` · `docs/decisions/`
+> Data: 2026-04-15 · Fase atual: **Sprint 1 — Débito Crítico**
 
-## Project Overview
+---
 
-**Loja Amor da Pátria** is a Masonic Lodge management web application built with React 18, TypeScript, and Supabase. It provides administrative and membership management features including authentication, financial control, secretary operations, and event management.
+## 1. 📋 REFERÊNCIAS OBRIGATÓRIAS
 
-## Development Commands
+| Documento | Caminho | Finalidade |
+|-----------|---------|-----------|
+| PRD | `docs/prd.md` | Requisitos, épicos, regras de negócio |
+| Backlog | `docs/backlog.md` | User stories, sprints, priorização |
+| Arquitetura | `.claude/rules/architecture.md` | Fluxo MVC obrigatório |
+| Segurança | `.claude/rules/security.md` | Regras de hardening |
+| Contexto | `.claude/rules/context.md` | Stack, MCPs, comandos |
+| Workflow | `.claude/rules/workflow.md` | Git, QA, deploy |
+| Memória | `C:\Users\rlcun\.claude\projects\c--Projetos-lojaamordapatria\memory\MEMORY.md` | Contexto persistente entre sessões |
 
-- **Start development server:** `npm run dev` (runs on port 3000)
-- **Build for production:** `npm run build`
-- **Build in development mode:** `npm run build:dev`
-- **Lint code:** `npm lint`
-- **Preview production build:** `npm run preview`
+**NUNCA tome decisões de arquitetura ou negócio sem consultar `docs/prd.md` primeiro.**
 
-## Architecture Overview
+---
 
-### Tech Stack
-- **Frontend:** React 18 + TypeScript
-- **Build Tool:** Vite (with SWC for fast compilation)
-- **Styling:** Tailwind CSS + shadcn/ui (Radix UI components)
-- **Routing:** React Router v6
-- **State Management & Data Fetching:** TanStack Query (React Query v5)
-- **Forms:** React Hook Form + Zod validation
-- **Backend/Database:** Supabase (auth, PostgreSQL, storage)
-- **Notifications:** Sonner + shadcn/ui Toast
+## 2. 🎯 OBJETIVO GERAL
 
-### Directory Structure
+| Item | Valor |
+|------|-------|
+| **Fase atual** | Sprint 1 — Débito Crítico |
+| **Meta** | Eliminar violações MVC, remover `any` nos hooks críticos, corrigir bugs de UX e verificar segurança de variáveis de ambiente |
+| **Tag alvo** | `v1.1.0` |
+| **Pré-requisito** | `pnpm tsc --noEmit` zero erros · `pnpm lint` zero warnings · build sem falhas |
+
+### Critérios de conclusão do Sprint 1
+- [ ] Zero chamadas `supabase.from()` diretas em componentes View
+- [ ] Zero `as any` nos hooks `useFinancialData`, `useSecretary`, `useHospitalaria`, `useAuditLog`
+- [ ] Formulário de visitantes sem campos duplicados
+- [ ] `client.ts` usa apenas `import.meta.env.VITE_*`
+
+---
+
+## 3. 📊 ROADMAP
+
+| Fase | Período | Foco | Tag | Status |
+|------|---------|------|-----|--------|
+| Sprint 1 | Semana 1–2 | Débito crítico: MVC + TypeScript + Bugs | `v1.1.0` | 🚀 Em andamento |
+| Sprint 2 | Semana 3–4 | Testes unitários + E2E + Error Boundaries + Code Splitting | `v1.2.0` | ⏳ Planejado |
+| Sprint 3 | Semana 5–6 | Performance + Hardening de segurança + CI/CD | `v1.3.0` | ⏳ Planejado |
+| Sprint 4 | Semana 7–8 | CRUD completo + UX mobile + Automações e-mail | `v1.4.0` | ⏳ Planejado |
+| Sprint 5 | Semana 9–10 | Conciliação bancária: importação + tela + match automático | `v2.0.0` | ⏳ Planejado |
+| Sprint 6 | Semana 11 | Conciliação: fechamento mensal + histórico + PDF | `v2.1.0` | ⏳ Planejado |
+
+---
+
+## 4. 🏢 CONTEXTO DO NEGÓCIO
+
+### Problema & Solução
+As operações de uma loja maçônica dependem de processos administrativos complexos — controle de frequência, atas, tesouraria, correspondências e gestão de membros — tipicamente feitos com planilhas, e-mails e papel. O sistema **Loja Amor da Pátria** digitaliza e centraliza tudo, garantindo rastreabilidade e acesso controlado por papel.
+
+### Público-alvo
+
+| Papel | Responsabilidades |
+|-------|------------------|
+| `admin` | Aprovação de membros, acesso total, KPIs executivos |
+| `secretary` | Documentos, convocações, atas, certificados, correspondências |
+| `member` | Agenda, documentos próprios, mensagens, perfil, frequência |
+| *Tesoureiro (derivado)* | Transações financeiras, relatórios de inadimplência, conciliação bancária |
+| *Chanceler (derivado)* | Documentação oficial, relatórios de presença e visitantes |
+| *Hospitaleiro (derivado)* | Casos sociais, visitas, fundo de beneficência |
+
+### OKRs
+
+| Objetivo | KR | Métrica |
+|----------|----|---------|
+| Eliminar processos manuais | 8 comissões digitalizadas | 100% dos fluxos cobertos no PRD |
+| Controle de acesso auditado | RLS em 100% das tabelas | Zero tabela sem policy definida |
+| Visibilidade financeira | Dashboard em tempo real | Saldo, inadimplência, conciliação disponíveis |
+| Histórico digital preservado | Documentos e atas em storage | 100% dos uploads com URL assinada |
+
+---
+
+## 5. 🏗️ REGRAS GLOBAIS
+
+### Commits (Conventional Commits obrigatório)
+
 ```
-src/
-├── components/        # Reusable UI components organized by domain
-│   ├── ui/          # shadcn/ui components (buttons, inputs, dialogs, etc.)
-│   ├── secretary/   # Secretary commission features
-│   ├── finance/     # Finance commission features
-│   ├── chancellery/ # Chancellery features
-│   ├── management/  # Management features
-│   ├── hospitalaria/# Hospitalaria features
-│   └── ...other domains
-├── pages/           # Route-level components (commission pages, auth, etc.)
-├── hooks/           # Custom hooks for data fetching (useSecretary, useFinancialData, etc.)
-├── contexts/        # Global state providers (AuthContext, ThemeContext)
-├── integrations/    # External service clients (Supabase client in integrations/supabase/)
-├── lib/             # Utilities and helpers
-├── assets/          # Static images and media
-└── App.tsx          # Main router configuration
-```
-
-### Key Patterns
-
-**1. Authentication & Authorization:**
-- Uses Supabase Auth with Context API (`src/contexts/AuthContext.tsx`)
-- User roles stored in `user_roles` table, not in profiles
-- Routes protected by role checks via `useAuth()` hook
-- Users must be "approved" status to access private routes
-
-**2. Data Fetching Pattern:**
-All data operations use custom hooks that wrap React Query:
-- `useSecretary.ts` - Documents, convocations, certificates
-- `useFinancialData.ts` - Transactions and financial dashboards
-- `useEvents.ts`, `useSessions.ts`, `useAttendances.ts` - Session management
-- Each hook exposes `useQuery` and `useMutation` from React Query for caching and invalidation
-
-**3. Component Organization:**
-- Features organized into commission-based directories (e.g., `secretary/`, `finance/`)
-- Each component follows shadcn/ui patterns with Form, Dialog, Sheet, etc.
-- Page components are routed through `src/pages/` and named by commission or feature
-
-**4. Form Handling:**
-- React Hook Form + Zod for validation
-- Schemas defined at component level or in shared validation files
-- Toast notifications for success/error feedback
-
-### Global State Providers
-
-The app wraps everything in several providers (see `App.tsx`):
-1. **QueryClientProvider** - React Query for server state
-2. **ThemeProvider** - Light/dark mode toggle
-3. **AuthProvider** - Authentication context and user session
-4. **TooltipProvider** - Radix UI tooltips
-5. **Sonner + Toast** - Notification systems
-
-### Supabase Integration
-
-- Client instantiated at `src/integrations/supabase/client.ts`
-- TypeScript types auto-generated in `src/integrations/supabase/types.ts`
-- Auth tokens stored in localStorage with auto-refresh
-- Row-Level Security (RLS) policies should enforce role-based access
-
-### User Roles & Permissions
-
-Three primary roles: `admin`, `member`, `secretary` (plus derived commission roles). Stored in `user_roles` table linked to `auth.users.id`. Key permission rules:
-- Admin/Secretary can perform writes to documents, transactions, etc.
-- Only admins can approve pending user registrations
-- Financial data restricted to treasury/admin only
-- Session attendance tracking restricted to officials
-
-## Important Context
-
-### Commission Pages
-The app has multiple commission-based pages under `/commission/`:
-- `/commission/secretary` - Document/convocation management
-- `/commission/finance` - Financial dashboards and transactions
-- `/commission/chancellery` - Official member documentation
-- `/commission/management` - Administrative dashboards
-- `/commission/hospitalaria` - Healthcare/welfare activities
-- Plus others: study time, books, articles, glossary, FAQ
-
-Each commission page typically contains a dashboard component with sub-features (e.g., `CommissionSecretary.tsx` uses `SecretaryDashboard`, `SecretaryDocuments`, etc.).
-
-### Database Tables
-Key tables referenced throughout the codebase:
-- `profiles` - User profile data
-- `user_roles` - User role assignments (use this, not profiles.role)
-- `documents` - Secretary documents with file URLs
-- `transactions` - Financial records
-- `sessions` - Meeting sessions (type, degree, theme)
-- `attendances` - Attendance records
-- `events` - Lodge events
-- And many others (view `src/integrations/supabase/types.ts` for full schema)
-
-### File Uploads
-Uses Supabase Storage for PDFs, images, and certificates. Hooks handle signed URLs and file deletion. File paths follow pattern: `{table}/{user_id}/{filename}`.
-
-### Styling Conventions
-- Use Tailwind utility classes directly in JSX
-- shadcn/ui components imported from `@/components/ui/`
-- Theme toggle via `next-themes` in ThemeContext
-- Responsive design mobile-first with Tailwind breakpoints
-- Dark mode CSS variables defined in `src/index.css`
-
-## Common Tasks
-
-### Adding a New Commission Feature
-1. Create component in `src/components/{commission}/` (e.g., `NewFeatureDashboard.tsx`)
-2. Create/update custom hook in `src/hooks/` (e.g., `useNewFeature.ts`) for data fetching
-3. Add route in `src/App.tsx` under `/commission/` path
-4. Use form components with React Hook Form + Zod for inputs
-5. Handle loading/error states with React Query `isLoading`, `isError`
-6. Provide feedback via Sonner toast notifications
-
-### Modifying Supabase Schema
-1. Update database schema in Supabase dashboard
-2. Re-generate types: `supabase gen types typescript` (or manually update `types.ts`)
-3. Update RLS policies to match new role-based access needs
-4. Update hooks that query the affected tables
-
-### Adding Authentication Checks
-Use the `useAuth()` hook to access user info:
-```typescript
-const { user, userRole, isCommissionMember } = useAuth();
-if (userRole !== 'admin') {
-  return <UnauthorizedPage />;
-}
+feat(auth): adicionar login com magic link
+fix(finance): corrigir cálculo de saldo
+refactor(sessions): extrair lógica para hook
+test(auth): adicionar testes de integração
+chore(deps): atualizar Supabase JS para v2.39
 ```
 
-## Notes for Future Work
+Tipos: `feat` · `fix` · `refactor` · `test` · `chore` · `docs` · `perf` · `style`
+Escopo: nome da feature (`auth`, `finance`, `secretary`, `sessions`, `ui`)
 
-- The project uses a "commission" metaphor for organizational structure (secretary, finance, etc.) heavily reflected in routing and UI
-- Component tagging with `lovable-tagger` is enabled in development mode
-- Consider lazy loading for route components as the app grows
-- Error boundaries should be added around commission pages for resilience
-- Database queries should leverage React Query's prefetching for better UX
+Use `/commit` para gerar commits com pré-verificações automáticas.
+
+### Segurança (não negociável)
+- **Zero secrets no código** — apenas `.env` / `.env.local` (nunca commitar)
+- **RLS em todas as tabelas** — habilitar na criação, nunca depois
+- **Sem `select('*')`** em produção — colunas explícitas sempre
+- **`service_role` nunca em `src/`** — apenas em Edge Functions
+- Inputs validados com **Zod** antes de qualquer persistência
+
+### Deploy
+```bash
+pnpm build    # gera dist/
+pnpm start    # servidor de produção
+# PM2 ou Docker — NUNCA Vercel
+# Rollback: git tag v1.0.0 && git push origin v1.0.0
+```
+
+### QA — Pré-requisitos para todo PR
+```bash
+pnpm tsc --noEmit   # zero erros de tipo
+pnpm lint           # zero warnings ESLint
+pnpm test --run     # testes passando
+pnpm build          # build sem falhas
+```
+
+### Tabela de Agentes Disponíveis
+
+| Agente | Quando usar |
+|--------|-------------|
+| `Explore` | Mapear codebase, encontrar arquivos por padrão, entender fluxos |
+| `Plan` | Desenhar estratégia de implementação antes de codar |
+| `general-purpose` | Pesquisa multi-etapa, buscas abertas no codebase |
+| `claude-code-guide` | Dúvidas sobre Claude Code CLI, SDK, hooks, MCP |
+| `/feature <nome>` | Scaffoldar nova feature seguindo arquitetura MVC |
+| `/commit` | Gerar commit com Conventional Commits + pré-verificações |
+| `/security-check` | Auditoria completa de segurança antes de PR |
+| `/review` | Revisão de código e conformidade com regras |
+| `/migration` | Criar migration Supabase com RLS e tipos |
+| `/epic <nome>` | Decompor épico do PRD em plano de execução |
+
+---
+
+## 6. 📌 STATUS DO PROJETO
+
+### ✅ Concluído (Épicos do PRD implementados)
+- Autenticação e gestão de perfil (login, cadastro, aprovação, roles)
+- Secretaria (documentos, convocações, certificados, correspondências)
+- Financeiro (transações, dashboard, inadimplência, contas)
+- Chancelaria (relatórios de frequência, membros, visitantes)
+- Sessões e frequência (criação, registro de presença, calendário)
+- Copo D'água (gestão de equipes por sessão)
+- Hospitalaria (casos, visitas, auxílio, fundo de beneficência)
+- Conteúdo educacional (artigos, glossário, FAQ, livros, estudos)
+- Comunicação interna (mensagens, leitura rastreada)
+- Gestão e relatórios (KPIs, auditoria, venerabilíssimos)
+
+### ❌ Bloqueantes identificados (Sprint 1)
+- Chamadas `supabase.from()` diretas em `CommissionSecretary.tsx`, `ChancelleryAttendanceReport.tsx`, `UserWorks.tsx` — viola arquitetura MVC
+- 27+ usos de `as any` em hooks críticos (`useFinancialData`: 14, `useSecretary`: 6, `useHospitalaria`: 4, `useAuditLog`: 2)
+- Campos de telefone duplicados no formulário de visitantes (`CommissionVisitors.tsx` linhas 295–408)
+
+### ⚠️ Decisões em aberto
+- Parser OFX para conciliação bancária: `ofx-js` (biblioteca) vs implementação própria
+- Geração de PDF: `jsPDF` (client-side) vs Edge Function com HTML→PDF
+- Virtualização de listas longas: `react-window` vs `react-virtual`
+
+### 🚀 Próximos (Sprint 1 — em ordem)
+1. **A-1** Extrair 6 chamadas Supabase de `CommissionSecretary.tsx` → `useSecretary.ts`
+2. **A-2** Criar `useChancellery.ts` com selects de `ChancelleryAttendanceReport.tsx`
+3. **A-3** Mover mutations de `UserWorks.tsx` → `useUserWorks.ts`
+4. **B-1** Tipar `useFinancialData.ts` (eliminar 14x `as any`)
+5. **B-2** Criar interfaces para retornos de `useSecretary.ts` (6x `as any`)
+6. **B-3** Tipar `useHospitalaria.ts` e `useAuditLog.ts`
+7. **G-4** Corrigir campos duplicados em `CommissionVisitors.tsx`
+8. **H-1** Verificar variáveis de ambiente no `client.ts`
+
+---
+
+## 7. 🔑 CHAVES & CONFIGURAÇÃO
+
+### Configuradas ✅
+| Variável | Onde | Uso |
+|----------|------|-----|
+| `VITE_SUPABASE_URL` | `.env.local` | URL do projeto Supabase |
+| `VITE_SUPABASE_ANON_KEY` | `.env.local` | Chave pública anon (client-side) |
+
+### Pendentes 🟡
+| Variável | Para que | Sprint |
+|----------|----------|--------|
+| `VITE_BREVO_API_KEY` | Envio de e-mails transacionais | Sprint 4 |
+| `VITE_STRIPE_PK` | Integração PIX/pagamentos | Sprint 6+ |
+| `N8N_WEBHOOK_URL` | Automações via n8n | Sprint 4 |
+
+### Nunca commitar ❌
+```
+.env
+.env.local
+.env.staging
+.env.production
+```
+
+Verificar antes de PR: `git diff | grep -E "sk_|pk_|password\s*=|ANON_KEY"`
+
+---
+
+## 8. 🛠️ STACK TÉCNICA
+
+| Camada | Tecnologia | Observação |
+|--------|-----------|-----------|
+| Runtime | Node.js LTS | — |
+| Package manager | `pnpm` | **Nunca `npm` ou `yarn`** |
+| Frontend | React 18 + TypeScript + Vite (SWC) | — |
+| Estilo | Tailwind CSS + shadcn/ui (Radix UI) | Mobile-first, dark mode |
+| Roteamento | React Router DOM v6 | Lazy loading a partir do Sprint 2 |
+| Estado servidor | TanStack Query v5 | Cache, mutações, invalidação |
+| Formulários | React Hook Form + Zod | Validação client + schema |
+| Backend/DB | Supabase (PostgreSQL + Auth + Storage + RLS) | BaaS principal |
+| Gráficos | Recharts | Dashboard financeiro |
+| Notificações | Sonner + shadcn Toast | Feedback de ações |
+| Testes unitários | Vitest | Sprint 2 |
+| Testes E2E | Playwright | Sprint 2 |
+| Deploy | PM2 / Docker | **Nunca Vercel** |
+| Pagamentos | Stripe | Backlog futuro |
+| E-mail | Brevo | Sprint 4 |
+| Automações | n8n self-hosted | Sprint 4 |
+
+### Princípios Arquiteturais (MVC — nunca violar)
+
+```
+View → Controller (hook) → Service → Supabase / API externa
+ [V]        [C]               [M]          [externo]
+```
+
+| Camada | Arquivo | Regra |
+|--------|---------|-------|
+| Model | `{feature}.types.ts` | Tipos, interfaces, schemas Zod — sem React |
+| Model | `{feature}.service.ts` | Funções async puras — sem estado, sem JSX |
+| Controller | `use{Feature}.ts` | Hook: orquestra estado + services; expõe à View |
+| View | `{Feature}Page.tsx` | Apenas props tipadas — sem fetch, sem Supabase direto |
+
+**Ordem obrigatória ao criar nova feature:** types → service → hook → page → barrel export
+
+---
+
+## 9. 📊 MCPs DISPONÍVEIS
+
+| MCP | Função | Exemplos de uso |
+|-----|--------|----------------|
+| `context7` | Documentação atualizada de qualquer lib | "Qual a API do TanStack Query v5 para prefetch?" |
+| `supabase` | Auth, RLS, Storage, Edge Functions, Realtime | Criar policy RLS, gerar tipos, verificar schema |
+| `stripe` | Produtos, preços, checkout, webhooks | Gerar QR Code PIX, configurar produto |
+| `brevo` | Templates de e-mail, envio transacional | Criar template de convocação, disparar e-mail |
+| `n8n` | Workflows e automações | Configurar trigger de inadimplência, webhook |
+
+### MCPs Futuros (Backlog)
+- `sentry` — Observabilidade e captura de erros em produção (Sprint 3)
+- `playwright` — Geração e execução de testes E2E (Sprint 2)
+
+**Regra:** Consulte MCPs antes de escrever código de integração com serviços externos.
+
+---
+
+## 10. 🎯 PRÓXIMAS AÇÕES
+
+### Sprint 1 — Débito Crítico (em andamento)
+
+#### Épico A — Refatoração MVC
+| ID | Ação | Agente | Status |
+|----|------|--------|--------|
+| A-1 | Extrair 6 chamadas `supabase.from()` de `CommissionSecretary.tsx` → `useSecretary.ts` | `Plan` → implementação | [ ] |
+| A-2 | Criar `useChancellery.ts` com 4 selects de `ChancelleryAttendanceReport.tsx` | implementação | [ ] |
+| A-3 | Mover mutations de `UserWorks.tsx` → `useUserWorks.ts` | implementação | [ ] |
+| A-4 | Criar camada `services/` com funções async puras por feature | `Plan` | [ ] |
+| A-5 | Auditar `src/pages/` (38 arquivos) para violações restantes | `Explore` | [ ] |
+
+#### Épico B — TypeScript sem `any`
+| ID | Ação | Agente | Status |
+|----|------|--------|--------|
+| B-1 | Tipar `useFinancialData.ts` — 14 instâncias `as any` | implementação | [ ] |
+| B-2 | Criar interfaces para retornos de `useSecretary.ts` — 6 instâncias | implementação | [ ] |
+| B-3 | Tipar `useHospitalaria.ts` (4) e `useAuditLog.ts` (2) | implementação | [ ] |
+
+#### Bugs e Segurança
+| ID | Ação | Agente | Status |
+|----|------|--------|--------|
+| G-4 | Corrigir campos duplicados em `CommissionVisitors.tsx` (linhas 295–408) | implementação | [ ] |
+| H-1 | Verificar que `client.ts` usa apenas `import.meta.env.VITE_*` | implementação | [ ] |
+
+### Sprint 2 — Preview (próximo)
+- C-1..C-3: Testes unitários dos hooks críticos (Vitest + mock Supabase)
+- C-4..C-5: Testes E2E de autenticação (Playwright)
+- E-1..E-3: `<FeatureErrorBoundary>` + padronização de erros nos hooks
+- D-1..D-2: `React.lazy()` + `<Suspense>` em todas as rotas de comissão
+
+---
+
+## 11. 📝 COMUNICAÇÃO
+
+### Perfil do usuário
+- **Ricardo Lopes** — desenvolvedor e administrador da loja
+- Responsável pelo produto e pela implementação
+- Experiência com React/TypeScript e Supabase
+- Prefere respostas em **português brasileiro**
+
+### Idioma e estilo
+- Responder **sempre em português brasileiro**
+- Tom: **direto e técnico** — sem rodeios, sem emojis desnecessários
+- Código: comentários em português quando a lógica não for auto-evidente
+- Referências a arquivos: usar links clicáveis `[arquivo.ts](caminho/arquivo.ts)`
+- Respostas curtas e objetivas — o usuário prefere ação sobre explicação
+
+---
+
+## 12. ✨ BOAS PRÁTICAS
+
+- **Nunca viole o fluxo MVC** — View não acessa Supabase diretamente; use sempre o hook
+- **Nunca use `select('*')`** em produção — declare colunas explicitamente
+- **Nunca instale pacotes sem solicitação explícita** — discuta antes de adicionar dependências
+- **Nunca commite secrets** — `.env` sempre no `.gitignore`
+- **Sempre valide com Zod** antes de persistir dados vindos do usuário
+- **Sempre use `pnpm`** — nunca `npm` ou `yarn`
+- **Sempre derive tipos do Supabase** — use `Database['public']['Tables']['tabela']['Row']`
+- **Nunca adicione comentários óbvios** — comente apenas lógica não evidente
+- **Nunca adicione tratamento de erros para cenários impossíveis** — confie no framework
+- **Nunca crie abstrações prematuras** — três linhas similares é melhor que abstração especulativa
+- **Sempre confirme antes de ações destrutivas** — `DELETE`, `DROP`, `reset --hard`
+- **Lazy load rotas de comissão** a partir do Sprint 2 (`React.lazy()` + `Suspense`)
+- **Error boundary** por comissão — falha em `/finance` não deve afetar `/secretary`
+
+---
+
+## 13. 📚 MODELAGEM DE DADOS
+
+### Domínio: Auth & Perfil
+| Tabela | Descrição |
+|--------|-----------|
+| `profiles` | Dados pessoais do membro (nome, avatar, grau, CIM, status) |
+| `user_roles` | Papel do usuário: `admin`, `member`, `secretary` — use esta, não `profiles.role` |
+
+### Domínio: Secretaria
+| Tabela | Descrição |
+|--------|-----------|
+| `secretary_documents` | Atas, editais, ofícios com URL no Storage |
+| `secretary_convocations` | Convocações para sessões com data e conteúdo |
+| `secretary_certificates` | Certificados emitidos por membro e tipo |
+| `secretary_correspondence` | Correspondências recebidas e enviadas |
+
+### Domínio: Financeiro
+| Tabela | Descrição |
+|--------|-----------|
+| `financial_accounts` | Contas da loja (nome, saldo, tipo) |
+| `financial_transactions` | Entradas e saídas com categoria, data e comprovante |
+| `financial_account_movements` | Movimentações por conta |
+
+### Domínio: Sessões & Frequência
+| Tabela | Descrição |
+|--------|-----------|
+| `sessions` | Sessões maçônicas (tipo, grau, tema, data) |
+| `session_attendances` | Frequência por sessão: `presente`, `ausente`, `justificado` |
+| `meeting_minutes` | Atas de sessão vinculadas |
+| `meeting_minutes_files` | Arquivos de atas no Storage |
+| `copo_dagua_calendar` | Equipes do ágape por sessão |
+
+### Domínio: Hospitalaria
+| Tabela | Descrição |
+|--------|-----------|
+| `hospitalar_cases` | Casos sociais com status de acompanhamento |
+| `hospitalar_visits` | Visitas agendadas e realizadas |
+| `hospitalar_aid_requests` | Pedidos de auxílio com status de aprovação |
+| `hospitalar_philanthropy` | Atividades filantrópicas |
+| `hospitalar_beneficence_fund` | Movimentações do fundo de beneficência |
+
+### Domínio: Eventos & Atividades
+| Tabela | Descrição |
+|--------|-----------|
+| `events` | Eventos da loja (público ou privado) |
+| `event_images` | Galeria de fotos por evento |
+| `activities` | Atividades diversas da loja |
+| `activity_images` | Imagens de atividades |
+
+### Domínio: Conteúdo Educacional
+| Tabela | Descrição |
+|--------|-----------|
+| `educational_content` | Conteúdo categorizado para membros |
+| `articles` | Artigos maçônicos publicados |
+| `glossary_terms` | Termos e definições do glossário |
+| `faq_items` | Perguntas e respostas frequentes |
+| `books` | Acervo da biblioteca com controle de empréstimo |
+| `book_loans` | Empréstimos ativos e histórico |
+| `users_works` | Trabalhos e estudos registrados pelos membros |
+| `commemorative_dates` | Datas comemorativas maçônicas |
+
+### Domínio: Comunicação
+| Tabela | Descrição |
+|--------|-----------|
+| `messages` | Mensagens internas com destinatário |
+| `message_reads` | Rastreamento de leitura por usuário |
+| `n8n_chat_histories` | Histórico de chat com IA (futuro) |
+
+### Domínio: Gestão
+| Tabela | Descrição |
+|--------|-----------|
+| `audit_logs` | Log de ações críticas (quem, o quê, quando) |
+| `officers` | Oficiais da loja e seus cargos |
+| `worshipful_masters` | Histórico de venerabilíssimos |
+| `lodge_info` | Informações institucionais da loja |
+| `management_cargo_reports` | Relatórios de entrega de cargos |
+| `visitors` | Visitantes registrados nas sessões |
+
+### Domínio: Conciliação Bancária (Sprint 5–6)
+| Tabela | Descrição |
+|--------|-----------|
+| `bank_statements` | Cabeçalho da importação de extrato por mês/conta |
+| `bank_statement_entries` | Lançamentos individuais do extrato bancário |
+| `bank_reconciliations` | Vínculos entre entradas do extrato e transações do sistema |
+
+---
+
+## 14. 🚀 QUANDO ATUALIZAR ESTE ARQUIVO
+
+Atualize o `CLAUDE.md` sempre que ocorrer:
+
+| Gatilho | O que atualizar |
+|---------|----------------|
+| Início de novo sprint | Seções "Objetivo Geral", "Status do Projeto", "Próximas Ações" |
+| Nova decisão técnica | Seção "Decisões em aberto" → registrar em `docs/decisions/` |
+| Nova tabela no Supabase | Seção "Modelagem de Dados" |
+| Nova dependência instalada | Seção "Stack Técnica" |
+| Nova variável de ambiente | Seção "Chaves & Configuração" |
+| Sprint concluído | Mover itens de "🚀 Próximos" para "✅ Concluído"; atualizar roadmap |
+| QA checklist completo | Tag Git + atualizar status da fase no Roadmap |
+| Mudança de arquitetura | Atualizar "Princípios Arquiteturais" + `.claude/rules/architecture.md` |
+
+---
+
+## 15. 📌 STATUS DA SESSÃO ATUAL
+
+> Última atualização: **2026-04-15** · Sessão: Planejamento e documentação
+
+### ✅ Concluído nesta sessão
+- Leitura e análise completa de `docs/prd.md` e `docs/backlog.md`
+- Geração do `CLAUDE.md` com 16 seções (este arquivo)
+- Criação de `.claude/memory/sessao_atual.md` com resumo da sessão
+- Criação de `.claude/memory/MEMORY.md` com índice de memórias persistentes
+
+### 🎯 Bloqueantes (Sprint 1 — nenhuma task executada ainda)
+| ID | Arquivo | Problema |
+|----|---------|---------|
+| A-1 | `src/pages/CommissionSecretary.tsx` | 6x `supabase.from()` direto na View |
+| A-2 | `src/components/chancellery/ChancelleryAttendanceReport.tsx` | 4 selects diretos na View |
+| A-3 | `src/pages/UserWorks.tsx` | Mutations diretas sem hook |
+| B-1 | `src/hooks/useFinancialData.ts` | 14x `as any` |
+| B-2 | `src/hooks/useSecretary.ts` | 6x `as any` |
+| B-3 | `src/hooks/useHospitalaria.ts` + `useAuditLog.ts` | 6x `as any` |
+| G-4 | `src/pages/CommissionVisitors.tsx` linhas 295–408 | Campos de telefone duplicados |
+| H-1 | `src/integrations/supabase/client.ts` | Verificar `import.meta.env.VITE_*` |
+
+### 📋 Próximo passo exato (início da próxima sessão)
+1. **H-1** — ler `src/integrations/supabase/client.ts` e verificar variáveis de ambiente (5 min)
+2. **G-4** — corrigir campos duplicados em `CommissionVisitors.tsx` (~1h)
+3. **A-1** — ler `CommissionSecretary.tsx` e extrair chamadas Supabase para `useSecretary.ts`
+
+### 💾 Memória persistida
+- `.claude/memory/sessao_atual.md` — resumo completo da sessão
+- `.claude/memory/MEMORY.md` — índice de memórias do projeto
+- `C:\Users\rlcun\.claude\projects\...\memory\` — memórias do sistema Claude Code
