@@ -37,6 +37,8 @@ import CommissionBooks from "./pages/CommissionBooks";
 import CommissionArticles from "./pages/CommissionArticles";
 import CommissionGlossary from "./pages/CommissionGlossary";
 import CommissionFAQ from "./pages/CommissionFAQ";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,8 @@ const AppContent = () => {
         <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/about" element={<About />} />
             <Route path="/activities" element={<Activities />} />
