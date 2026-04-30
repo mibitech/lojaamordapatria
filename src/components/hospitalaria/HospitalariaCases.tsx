@@ -9,14 +9,36 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, CalendarDays, List } from 'lucide-react';
 import { useHospitalarCases, useHospitalarMutation, SITUATION_TYPES, CASE_STATUSES, PRIORITIES } from '@/hooks/useHospitalaria';
 import { useProfiles } from '@/hooks/useProfiles';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import HospitalariaCasesCalendar from './HospitalariaCasesCalendar';
 
-const priorityColor: Record<string, string> = { Alta: 'destructive', Média: 'secondary', Baixa: 'outline' };
-const statusColor: Record<string, string> = { Ativo: 'default', Resolvido: 'secondary', Encerrado: 'outline' };
+const PRIORITY_BADGE: Record<string, string> = {
+  Alta:  'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-transparent',
+  Média: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-transparent',
+  Baixa: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-transparent',
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  Ativo:     'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-transparent',
+  Resolvido: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-transparent',
+  Encerrado: 'bg-muted text-muted-foreground border-transparent',
+};
+
+const MS_15_DAYS = 15 * 24 * 60 * 60 * 1000;
+
+function isOverdue(c: { status: string; start_date: string }): boolean {
+  return c.status === 'Ativo' && (Date.now() - parseDateSafe(c.start_date).getTime()) > MS_15_DAYS;
+}
+
+function statusBadgeClass(c: { status: string; start_date: string }): string {
+  return isOverdue(c)
+    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-transparent'
+    : (STATUS_BADGE[c.status] ?? 'border-transparent');
+}
 
 const HospitalariaCases: React.FC = () => {
   const { data: cases = [], isLoading } = useHospitalarCases();
@@ -25,6 +47,7 @@ const HospitalariaCases: React.FC = () => {
   const [dialog, setDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
   const openNew = () => { setForm({ situation_type: 'Outro', status: 'Ativo', priority: 'Média', start_date: new Date().toISOString().split('T')[0] }); setEditingId(null); setDialog(true); };
   const openEdit = (c: any) => { setForm(c); setEditingId(c.id); setDialog(true); };
@@ -43,10 +66,26 @@ const HospitalariaCases: React.FC = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Obreiros em Acompanhamento</CardTitle>
-          <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Novo</Button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-md border overflow-hidden">
+              <Button variant={viewMode === 'calendar' ? 'default' : 'ghost'} size="sm"
+                className="rounded-none h-8 px-3 gap-1.5" onClick={() => setViewMode('calendar')}>
+                <CalendarDays className="w-4 h-4" />
+                <span className="hidden sm:inline">Calendário</span>
+              </Button>
+              <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm"
+                className="rounded-none h-8 px-3 gap-1.5" onClick={() => setViewMode('list')}>
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline">Lista</span>
+              </Button>
+            </div>
+            <Button onClick={openNew} size="sm"><Plus className="w-4 h-4 mr-2" />Novo</Button>
+          </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? <p className="text-center py-8">Carregando...</p> : (
+          {isLoading ? <p className="text-center py-8">Carregando...</p> : viewMode === 'calendar' ? (
+            <HospitalariaCasesCalendar cases={cases} onEdit={openEdit} />
+          ) : (
             <>
               <div className="hidden md:block overflow-x-auto">
                 <Table>
@@ -68,8 +107,8 @@ const HospitalariaCases: React.FC = () => {
                       <TableRow key={c.id}>
                         <TableCell className="font-medium">{c.profiles?.full_name || '-'}</TableCell>
                         <TableCell>{c.situation_type}</TableCell>
-                        <TableCell><Badge variant={priorityColor[c.priority] as any}>{c.priority}</Badge></TableCell>
-                        <TableCell><Badge variant={statusColor[c.status] as any}>{c.status}</Badge></TableCell>
+                        <TableCell><Badge className={`text-xs ${PRIORITY_BADGE[c.priority] ?? ''}`}>{c.priority}</Badge></TableCell>
+                        <TableCell><Badge className={`text-xs ${statusBadgeClass(c)}`}>{c.status}</Badge></TableCell>
                         <TableCell>{format(parseDateSafe(c.start_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                         <TableCell>{c.responsible?.full_name || '-'}</TableCell>
                         <TableCell className="text-right space-x-1">
@@ -92,10 +131,10 @@ const HospitalariaCases: React.FC = () => {
                           <p className="font-semibold">{c.profiles?.full_name || '-'}</p>
                           <p className="text-sm text-muted-foreground">{c.situation_type} — {format(parseDateSafe(c.start_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
                         </div>
-                        <Badge variant={statusColor[c.status] as any}>{c.status}</Badge>
+                        <Badge className={`text-xs ${statusBadgeClass(c)}`}>{c.status}</Badge>
                       </div>
                       <div className="flex gap-2">
-                        <Badge variant={priorityColor[c.priority] as any}>{c.priority}</Badge>
+                        <Badge className={`text-xs ${PRIORITY_BADGE[c.priority] ?? ''}`}>{c.priority}</Badge>
                         {c.responsible?.full_name && <span className="text-sm text-muted-foreground">Resp: {c.responsible.full_name}</span>}
                       </div>
                       <div className="flex gap-2 pt-2 border-t">

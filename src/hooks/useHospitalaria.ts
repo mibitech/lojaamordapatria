@@ -31,6 +31,7 @@ export interface HospitalarVisit {
   updated_situation: string | null;
   created_at: string;
   profiles?: { full_name: string | null };
+  case?: { situation_type: string; profiles?: { full_name: string | null } } | null;
 }
 
 export interface HospitalarAidRequest {
@@ -112,7 +113,7 @@ export function useHospitalarVisits() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hospitalar_visits')
-        .select('*, profiles:profile_id(full_name)')
+        .select('*, profiles:profile_id(full_name), case:case_id(situation_type, profiles:profile_id(full_name))')
         .order('visit_date', { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as HospitalarVisit[];

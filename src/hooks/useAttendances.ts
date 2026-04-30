@@ -45,7 +45,6 @@ export const useAttendances = (sessionId?: string) => {
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
       setAttendances(data || []);
     } catch (error) {
@@ -56,48 +55,69 @@ export const useAttendances = (sessionId?: string) => {
     }
   };
 
-  const toggleAttendance = async (sessionId: string, profileId: string, isPresent: boolean) => {
+  /**
+   * Grava todas as presenças de uma vez (upsert em lote).
+   * presence: mapa profileId → is_present
+   * profileDefaults: posição padrão por profileId (usada somente em inserts novos)
+   */
+  const saveAllPresence = async (
+    sid: string,
+    presence: Record<string, boolean>,
+    profileDefaults: Record<string, string | null>
+  ) => {
     try {
-      // Check if attendance record exists
-      const { data: existing } = await supabase
+      const { data: existing, error: fetchError } = await supabase
         .from("session_attendances")
-        .select("id")
-        .eq("session_id", sessionId)
-        .eq("profile_id", profileId)
-        .maybeSingle();
+        .select("id, profile_id, is_present")
+        .eq("session_id", sid);
 
-      if (existing) {
-        // Update existing record
-        const { error } = await supabase
-          .from("session_attendances")
-          .update({ is_present: isPresent })
-          .eq("id", existing.id);
+      if (fetchError) throw fetchError;
 
-        if (error) throw error;
-      } else {
-        // Create new record - fetch profile position to use as default
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("position")
-          .eq("id", profileId)
-          .single();
+      const existingMap = new Map(existing?.map(e => [e.profile_id, e]) ?? []);
 
-        const { error } = await supabase
-          .from("session_attendances")
-          .insert({
-            session_id: sessionId,
+      const toUpdate: { id: string; is_present: boolean }[] = [];
+      const toInsert: {
+        session_id: string;
+        profile_id: string;
+        is_present: boolean;
+        position_override: string | null;
+      }[] = [];
+
+      Object.entries(presence).forEach(([profileId, isPresent]) => {
+        const rec = existingMap.get(profileId);
+        if (rec) {
+          if (rec.is_present !== isPresent) {
+            toUpdate.push({ id: rec.id, is_present: isPresent });
+          }
+        } else if (isPresent) {
+          // Só cria registro novo se o membro foi marcado como presente
+          toInsert.push({
+            session_id: sid,
             profile_id: profileId,
-            is_present: isPresent,
-            position_override: profileData?.position || null,
+            is_present: true,
+            position_override: profileDefaults[profileId] ?? null,
           });
+        }
+      });
 
+      if (toUpdate.length > 0) {
+        await Promise.all(
+          toUpdate.map(({ id, is_present }) =>
+            supabase.from("session_attendances").update({ is_present }).eq("id", id)
+          )
+        );
+      }
+
+      if (toInsert.length > 0) {
+        const { error } = await supabase.from("session_attendances").insert(toInsert);
         if (error) throw error;
       }
 
+      toast.success("Presenças gravadas com sucesso!");
       await loadAttendances();
     } catch (error) {
-      console.error("Error toggling attendance:", error);
-      toast.error("Erro ao atualizar presença");
+      console.error("Error saving attendances:", error);
+      toast.error("Erro ao gravar presenças");
       throw error;
     }
   };
@@ -110,7 +130,6 @@ export const useAttendances = (sessionId?: string) => {
         .eq("id", id);
 
       if (error) throw error;
-      
       await loadAttendances();
     } catch (error) {
       console.error("Error updating position:", error);
@@ -127,7 +146,6 @@ export const useAttendances = (sessionId?: string) => {
         .eq("id", id);
 
       if (error) throw error;
-      
       toast.success("Presença removida com sucesso!");
       await loadAttendances();
     } catch (error) {
@@ -144,7 +162,7 @@ export const useAttendances = (sessionId?: string) => {
   return {
     attendances,
     loading,
-    toggleAttendance,
+    saveAllPresence,
     updatePosition,
     removeAttendance,
     reload: loadAttendances,
