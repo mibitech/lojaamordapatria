@@ -157,7 +157,8 @@ const CommissionAttendances: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px]">Presente</TableHead>
+                      <TableHead className="w-[80px]">Presente</TableHead>
+                      <TableHead className="w-[100px]">CIM</TableHead>
                       <TableHead>Nome Completo</TableHead>
                       <TableHead>Nome de Tratamento</TableHead>
                       <TableHead className="w-[100px] text-right">Ações</TableHead>
@@ -168,7 +169,7 @@ const CommissionAttendances: React.FC = () => {
                       const isPresent = getAttendanceState(profile.id);
                       const attendance = attendances.find(a => a.profile_id === profile.id);
                       const displayPosition = getDisplayPosition(profile.id);
-                      
+
                       return (
                         <TableRow key={profile.id}>
                           <TableCell>
@@ -177,6 +178,7 @@ const CommissionAttendances: React.FC = () => {
                               onCheckedChange={() => handleTogglePresence(profile.id, isPresent)}
                             />
                           </TableCell>
+                          <TableCell className="font-mono text-sm">{profile.cim || "-"}</TableCell>
                           <TableCell>{profile.full_name || "-"}</TableCell>
                           <TableCell>
                             {attendance ? (

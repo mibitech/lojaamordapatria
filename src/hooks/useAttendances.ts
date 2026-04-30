@@ -15,6 +15,7 @@ export interface Attendance {
 export interface AttendanceWithProfile extends Attendance {
   profiles: {
     id: string;
+    cim: string | null;
     full_name: string | null;
     position: string | null;
   };
@@ -32,6 +33,7 @@ export const useAttendances = (sessionId?: string) => {
           *,
           profiles (
             id,
+            cim,
             full_name,
             position
           )

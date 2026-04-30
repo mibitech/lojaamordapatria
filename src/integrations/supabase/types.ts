@@ -1292,6 +1292,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cim: string | null
           commission: string | null
           created_at: string | null
           email: string | null
@@ -1309,6 +1310,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          cim?: string | null
           commission?: string | null
           created_at?: string | null
           email?: string | null
@@ -1326,6 +1328,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          cim?: string | null
           commission?: string | null
           created_at?: string | null
           email?: string | null

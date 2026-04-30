@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 export interface Profile {
   id: string;
   user_id?: string;
+  cim?: string | null;
   full_name?: string;
   position?: string;
   phone?: string;

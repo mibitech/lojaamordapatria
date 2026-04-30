@@ -55,6 +55,7 @@ import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const profileSchema = z.object({
+  cim: z.string().regex(/^\d{6}$/, 'CIM deve ter exatamente 6 dígitos numéricos').optional().or(z.literal('')),
   full_name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(200, 'Nome muito longo'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
@@ -204,6 +205,7 @@ const CommissionProfiles: React.FC = () => {
   const openEditDialog = (profile: Profile) => {
     setEditingProfile(profile);
     reset({
+      cim: profile.cim || '',
       full_name: profile.full_name || '',
       email: profile.email || '',
       phone: profile.phone || '',
@@ -318,6 +320,7 @@ const CommissionProfiles: React.FC = () => {
 
     try {
       await updateProfile(editingProfile.id, {
+        cim: data.cim || null,
         full_name: data.full_name,
         email: data.email || null,
         phone: data.phone || null,
@@ -434,6 +437,7 @@ const CommissionProfiles: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[100px]">CIM</TableHead>
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -473,13 +477,14 @@ const CommissionProfiles: React.FC = () => {
               <TableBody>
                 {filteredAndSortedProfiles.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhum perfil encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredAndSortedProfiles.map((profile) => (
                     <TableRow key={profile.id}>
+                      <TableCell className="font-mono text-sm">{profile.cim || '-'}</TableCell>
                       <TableCell className="font-medium">{profile.full_name || '-'}</TableCell>
                       <TableCell className="text-sm">{profile.email || '-'}</TableCell>
                       <TableCell className="text-sm">{profile.position || '-'}</TableCell>
@@ -549,6 +554,9 @@ const CommissionProfiles: React.FC = () => {
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
+                    {profile.cim && (
+                      <p className="text-xs font-mono text-muted-foreground mb-1">CIM: {profile.cim}</p>
+                    )}
                     <h3 className="font-semibold text-lg">{profile.full_name || 'Nome não informado'}</h3>
                     <p className="text-sm text-muted-foreground">{profile.position || 'Cargo não informado'}</p>
                   </div>
@@ -585,6 +593,25 @@ const CommissionProfiles: React.FC = () => {
             <DialogTitle>Editar Perfil</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="cim">CIM — Código de Identificação Maçônica</Label>
+              <Input
+                id="cim"
+                {...register('cim')}
+                placeholder="000000"
+                maxLength={6}
+                className="font-mono"
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.value = el.value.replace(/\D/g, '').slice(0, 6);
+                }}
+              />
+              {errors.cim && (
+                <p className="text-sm text-destructive mt-1">{errors.cim.message}</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">6 dígitos numéricos</p>
+            </div>
+
             <div>
               <Label htmlFor="full_name">Nome Completo *</Label>
               <Input

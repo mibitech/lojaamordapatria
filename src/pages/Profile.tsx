@@ -23,6 +23,7 @@ import {
 
 interface ProfileData {
   id: string;
+  cim: string;
   full_name: string;
   position: string;
   phone: string;
@@ -59,6 +60,7 @@ const Profile: React.FC = () => {
   const [profileImages, setProfileImages] = useState<ImageItem[]>([]);
   const [profileData, setProfileData] = useState<ProfileData>({
     id: '',
+    cim: '',
     full_name: '',
     position: '',
     phone: '',
@@ -113,7 +115,7 @@ const Profile: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, position, phone, email, photo_url, is_commission_member, commission')
+        .select('id, cim, full_name, position, phone, email, photo_url, is_commission_member, commission')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -123,6 +125,7 @@ const Profile: React.FC = () => {
         setHasProfile(true);
         setProfileData({
           id: data.id || '',
+          cim: data.cim || '',
           full_name: data.full_name || '',
           position: data.position || '',
           phone: data.phone || '',
@@ -466,6 +469,20 @@ const Profile: React.FC = () => {
 
                 {/* Information Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3 md:col-span-2">
+                    <Label htmlFor="cim" className="text-base font-semibold flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      CIM — Código de Identificação Maçônica
+                    </Label>
+                    <Input
+                      id="cim"
+                      value={profileData.cim || '—'}
+                      disabled
+                      className="h-11 font-mono text-lg tracking-widest opacity-70 cursor-not-allowed max-w-[160px]"
+                    />
+                    <p className="text-xs text-muted-foreground">Atribuído pela Secretaria da Loja</p>
+                  </div>
+
                   <div className="space-y-3">
                     <Label htmlFor="full_name" className="text-base font-semibold flex items-center gap-2">
                       <User className="w-4 h-4" />
