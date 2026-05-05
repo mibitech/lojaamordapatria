@@ -25,7 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, GitMerge, Loader2, Save } from "lucide-react";
+import { Trash2, GitMerge, Loader2, Save, RotateCcw } from "lucide-react";
 import { useSessions } from "@/hooks/useSessions";
 import { useAttendances } from "@/hooks/useAttendances";
 import { useProfiles } from "@/hooks/useProfiles";
@@ -52,6 +52,37 @@ interface OcrResult {
 
 const normalize = (str: string) =>
   str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+const PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'e'])
+
+function significantWords(name: string): string[] {
+  return normalize(name).split(/\s+/).filter(w => w.length > 2 && !PARTICLES.has(w))
+}
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length
+  const dp: number[][] = []
+  for (let i = 0; i <= m; i++) dp[i] = [i]
+  for (let j = 0; j <= n; j++) dp[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+    }
+  }
+  return dp[m][n]
+}
+
+function wordsMatch(ow: string, pw: string): boolean {
+  if (ow === pw) return true
+  const owClean = ow.endsWith('.') ? ow.slice(0, -1) : ow
+  if (owClean.length === 1 && pw.startsWith(owClean)) return true
+  if (ow.length >= 5 && pw.length >= 5) {
+    return levenshtein(ow, pw) <= (ow.length >= 8 ? 2 : 1)
+  }
+  return false
+}
 
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -246,25 +277,49 @@ const CommissionAttendances: React.FC = () => {
       const unmatched: OcrEntry[] = [];
 
       entries.forEach((entry) => {
-        let profileMatch = profiles.find(p =>
-          entry.cim && p.cim ? entry.cim === p.cim : false
-        );
+        // 1. CIM match — normaliza zeros à esquerda (ex: "12345" == "012345")
+        let profileMatch = profiles.find(p => {
+          if (!entry.cim || !p.cim) return false
+          return entry.cim.replace(/^0+/, '') === p.cim.replace(/^0+/, '')
+        })
 
+        // 2. Matching por nome com tolerância a erros de caligrafia
         if (!profileMatch && entry.name) {
-          const ocrWords = normalize(entry.name).split(/\s+/).filter(w => w.length > 3);
-          profileMatch = profiles.find(p => {
-            if (!p.full_name) return false;
-            const profileWords = normalize(p.full_name).split(/\s+/);
-            const hits = ocrWords.filter(w => profileWords.includes(w)).length;
-            return hits >= 2 || (ocrWords.length === 1 && profileWords.includes(ocrWords[0]));
-          });
+          const ocrWords = significantWords(entry.name)
+          if (ocrWords.length > 0) {
+            const scored = profiles
+              .filter(p => p.full_name)
+              .map(p => {
+                const profileWords = significantWords(p.full_name!)
+                let score = 0
+                for (const ow of ocrWords) {
+                  for (const pw of profileWords) {
+                    if (wordsMatch(ow, pw)) { score++; break }
+                  }
+                }
+                return { profile: p, score }
+              })
+              .filter(s => s.score > 0)
+              .sort((a, b) => b.score - a.score)
+
+            if (scored.length > 0) {
+              const best = scored[0]
+              if (ocrWords.length === 1) {
+                // Nome único no OCR — só concilia se não houver ambiguidade
+                const tied = scored.filter(s => s.score === best.score)
+                if (tied.length === 1) profileMatch = best.profile
+              } else if (best.score >= 2) {
+                profileMatch = best.profile
+              }
+            }
+          }
         }
 
         if (profileMatch) {
-          pending[profileMatch.id] = true;
-          matched.push({ name: profileMatch.full_name || profileMatch.id, cim: profileMatch.cim ?? null });
+          pending[profileMatch.id] = true
+          matched.push({ name: profileMatch.full_name || profileMatch.id, cim: profileMatch.cim ?? null })
         } else {
-          unmatched.push(entry);
+          unmatched.push(entry)
         }
       });
 
@@ -277,6 +332,14 @@ const CommissionAttendances: React.FC = () => {
     } finally {
       setOcrLoading(false);
     }
+  };
+
+  const handleClearPresence = () => {
+    const cleared: Record<string, boolean> = {};
+    profiles.forEach(p => { cleared[p.id] = false; });
+    setLocalPresence(cleared);
+    setLivroChecked({});
+    toast.info('Lista zerada');
   };
 
   const handleConciliar = () => {
@@ -468,7 +531,15 @@ const CommissionAttendances: React.FC = () => {
                   </Table>
                 </div>
 
-                <div className="flex justify-end pt-4 border-t mt-4">
+                <div className="flex justify-between pt-4 border-t mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleClearPresence}
+                    className="gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Zerar Lista
+                  </Button>
                   <Button
                     onClick={handleSave}
                     disabled={isSaving || !isDirty}

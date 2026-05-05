@@ -387,26 +387,6 @@ const CommissionVisitors: React.FC = () => {
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="mobile_phone">Celular</Label>
-                <Input
-                  id="mobile_phone"
-                  value={formData.mobile_phone}
-                  onChange={(e) => setFormData({ ...formData, mobile_phone: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="landline_phone">Telefone Fixo</Label>
-                <Input
-                  id="landline_phone"
-                  value={formData.landline_phone}
-                  onChange={(e) => setFormData({ ...formData, landline_phone: e.target.value })}
-                />
-              </div>
-            </div>
-
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
                 Cancelar

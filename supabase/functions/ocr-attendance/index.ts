@@ -13,26 +13,35 @@ export interface OcrEntry {
 
 const PROMPT = `Você está analisando uma foto de um livro de presença MANUSCRITO de uma Loja Maçônica brasileira.
 
-Sua tarefa é extrair TODOS os registros visíveis na imagem, identificando:
-- Nome completo do membro (como escrito, mesmo que parcialmente legível)
-- CIM: Código de Identificação Maçônica — número de 6 dígitos que pode aparecer antes ou após o nome, ou em coluna separada
+Sua tarefa é extrair TODOS os registros visíveis na imagem, identificando para cada linha:
+- Nome do membro (como escrito, mesmo que parcialmente legível ou abreviado)
+- CIM: Código de Identificação Maçônica — número de 5 a 6 dígitos que pode aparecer antes ou após o nome, em coluna separada ou na margem
+
+Contexto importante:
+- Nomes são brasileiros e podem conter partículas: "de", "da", "do", "dos", "das"
+- Nomes podem aparecer em CAIXA ALTA, minúsculas ou mistos (ex: "JOÃO SILVA", "j. m. silva")
+- É comum o membro escrever apenas prenome + sobrenome, ou usar iniciais (ex: "J. M. Silva")
+- O CIM pode ter 5 ou 6 dígitos, com ou sem zero à esquerda (ex: "12345" pode ser o CIM "012345")
+- Pode haver 10 a 50 entradas por página dispostas em linhas
+- Inclua leituras incertas — é melhor incluir com erro do que omitir
 
 Retorne APENAS um JSON válido, sem texto adicional, no formato:
 {
   "entries": [
-    { "name": "Nome Completo", "cim": "123456" },
-    { "name": "Outro Membro", "cim": null },
+    { "name": "João Maria Silva", "cim": "012345" },
+    { "name": "Carlos Santos", "cim": null },
     { "name": null, "cim": "654321" }
   ]
 }
 
-Regras importantes:
-- Inclua TODOS os registros visíveis, mesmo que a caligrafia seja difícil
+Regras:
+- Inclua TODOS os registros visíveis, mesmo com caligrafia difícil
 - Se o CIM não aparecer para um nome, defina cim como null
-- Se aparecer apenas um número de 6 dígitos sem nome claro, inclua com name null
-- Normalize nomes: capitalize corretamente (ex: "JOÃO SILVA" → "João Silva")
+- Se aparecer apenas um número sem nome claro, inclua com name null
+- Normalize nomes: capitalize corretamente ("JOÃO SILVA" → "João Silva", "j. silva" → "J. Silva")
 - Não invente dados — inclua apenas o que está visível na imagem
-- CIM deve ser uma string de exatamente 6 dígitos numéricos ou null`
+- CIM deve ser string de 5–6 dígitos numéricos ou null (preserve zeros se visíveis)
+- Em caso de leitura incerta de um caractere, inclua seu melhor palpite`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
