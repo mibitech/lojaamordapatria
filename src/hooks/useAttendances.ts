@@ -155,6 +155,22 @@ export const useAttendances = (sessionId?: string) => {
     }
   };
 
+  const clearAllAttendances = async (sid: string) => {
+    try {
+      const { error } = await supabase
+        .from("session_attendances")
+        .delete()
+        .eq("session_id", sid);
+
+      if (error) throw error;
+      await loadAttendances();
+    } catch (error) {
+      console.error("Error clearing attendances:", error);
+      toast.error("Erro ao zerar lista");
+      throw error;
+    }
+  };
+
   useEffect(() => {
     loadAttendances();
   }, [sessionId]);
@@ -165,6 +181,7 @@ export const useAttendances = (sessionId?: string) => {
     saveAllPresence,
     updatePosition,
     removeAttendance,
+    clearAllAttendances,
     reload: loadAttendances,
   };
 };

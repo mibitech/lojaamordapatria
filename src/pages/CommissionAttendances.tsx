@@ -55,35 +55,6 @@ const normalize = (str: string) =>
 
 const PARTICLES = new Set(['de', 'da', 'do', 'dos', 'das', 'e'])
 
-function significantWords(name: string): string[] {
-  return normalize(name).split(/\s+/).filter(w => w.length > 2 && !PARTICLES.has(w))
-}
-
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length
-  const dp: number[][] = []
-  for (let i = 0; i <= m; i++) dp[i] = [i]
-  for (let j = 0; j <= n; j++) dp[0][j] = j
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
-    }
-  }
-  return dp[m][n]
-}
-
-function wordsMatch(ow: string, pw: string): boolean {
-  if (ow === pw) return true
-  const owClean = ow.endsWith('.') ? ow.slice(0, -1) : ow
-  if (owClean.length === 1 && pw.startsWith(owClean)) return true
-  if (ow.length >= 5 && pw.length >= 5) {
-    return levenshtein(ow, pw) <= (ow.length >= 8 ? 2 : 1)
-  }
-  return false
-}
-
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -137,7 +108,7 @@ const CommissionAttendances: React.FC = () => {
   const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
   const [pendingLivro, setPendingLivro] = useState<Record<string, boolean>>({});
 
-  const { attendances, loading, saveAllPresence, updatePosition, removeAttendance } =
+  const { attendances, loading, saveAllPresence, updatePosition, removeAttendance, clearAllAttendances } =
     useAttendances(selectedSessionId);
 
   const now = new Date();
@@ -279,47 +250,31 @@ const CommissionAttendances: React.FC = () => {
       entries.forEach((entry) => {
         // 1. CIM match — normaliza zeros à esquerda (ex: "12345" == "012345")
         let profileMatch = profiles.find(p => {
-          if (!entry.cim || !p.cim) return false
-          return entry.cim.replace(/^0+/, '') === p.cim.replace(/^0+/, '')
-        })
+          if (!entry.cim || !p.cim) return false;
+          return entry.cim.replace(/^0+/, '') === p.cim.replace(/^0+/, '');
+        });
 
-        // 2. Matching por nome com tolerância a erros de caligrafia
+        // 2. Matching por palavras do nome (exact, sem partículas, palavras > 3 chars)
         if (!profileMatch && entry.name) {
-          const ocrWords = significantWords(entry.name)
-          if (ocrWords.length > 0) {
-            const scored = profiles
-              .filter(p => p.full_name)
-              .map(p => {
-                const profileWords = significantWords(p.full_name!)
-                let score = 0
-                for (const ow of ocrWords) {
-                  for (const pw of profileWords) {
-                    if (wordsMatch(ow, pw)) { score++; break }
-                  }
-                }
-                return { profile: p, score }
-              })
-              .filter(s => s.score > 0)
-              .sort((a, b) => b.score - a.score)
+          const ocrWords = normalize(entry.name)
+            .split(/\s+/)
+            .filter(w => w.length > 3 && !PARTICLES.has(w));
 
-            if (scored.length > 0) {
-              const best = scored[0]
-              if (ocrWords.length === 1) {
-                // Nome único no OCR — só concilia se não houver ambiguidade
-                const tied = scored.filter(s => s.score === best.score)
-                if (tied.length === 1) profileMatch = best.profile
-              } else if (best.score >= 2) {
-                profileMatch = best.profile
-              }
-            }
+          if (ocrWords.length > 0) {
+            profileMatch = profiles.find(p => {
+              if (!p.full_name) return false;
+              const profileWords = normalize(p.full_name).split(/\s+/);
+              const hits = ocrWords.filter(w => profileWords.includes(w)).length;
+              return hits >= 2 || (ocrWords.length === 1 && profileWords.includes(ocrWords[0]));
+            });
           }
         }
 
         if (profileMatch) {
-          pending[profileMatch.id] = true
-          matched.push({ name: profileMatch.full_name || profileMatch.id, cim: profileMatch.cim ?? null })
+          pending[profileMatch.id] = true;
+          matched.push({ name: profileMatch.full_name || profileMatch.id, cim: profileMatch.cim ?? null });
         } else {
-          unmatched.push(entry)
+          unmatched.push(entry);
         }
       });
 
@@ -334,12 +289,11 @@ const CommissionAttendances: React.FC = () => {
     }
   };
 
-  const handleClearPresence = () => {
-    const cleared: Record<string, boolean> = {};
-    profiles.forEach(p => { cleared[p.id] = false; });
-    setLocalPresence(cleared);
+  const handleClearPresence = async () => {
+    if (!selectedSessionId) return;
+    await clearAllAttendances(selectedSessionId);
     setLivroChecked({});
-    toast.info('Lista zerada');
+    toast.info('Lista de presenças zerada');
   };
 
   const handleConciliar = () => {
