@@ -9,8 +9,9 @@ import ManagementReports from '@/components/management/ManagementReports';
 import ManagementCargoDelivery from '@/components/management/ManagementCargoDelivery';
 import ManagementHistory from '@/components/management/ManagementHistory';
 import ManagementAuditoria from '@/components/management/ManagementAuditoria';
+import ManagementAccess from '@/components/management/ManagementAccess';
 
-type TabKey = 'executive' | 'indicators' | 'reports' | 'auditoria' | 'cargo' | 'history';
+type TabKey = 'executive' | 'indicators' | 'reports' | 'auditoria' | 'cargo' | 'history' | 'access';
 
 const tabs: { key: TabKey; label: string; disabled?: boolean }[] = [
   { key: 'executive', label: 'Painel Executivo' },
@@ -19,11 +20,15 @@ const tabs: { key: TabKey; label: string; disabled?: boolean }[] = [
   { key: 'auditoria', label: 'Auditoria' },
   { key: 'cargo', label: 'Entrega de Cargo' },
   { key: 'history', label: 'Histórico de Gestões' },
+  { key: 'access', label: 'Acessos' },
 ];
 
 const CommissionManagement: React.FC = () => {
-  const { user, isCommissionMember } = useAuth();
+  const { user, isCommissionMember, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('executive');
+
+  // A aba de acessos concede e revoga papéis — exclusiva de administradores.
+  const visibleTabs = tabs.filter(tab => tab.key !== 'access' || isAdmin);
 
   if (!isCommissionMember) {
     return (
@@ -50,7 +55,7 @@ const CommissionManagement: React.FC = () => {
         </div>
         <div className="overflow-x-auto mb-8 -mx-4 px-4 md:mx-0 md:px-0">
           <div className="flex gap-2 bg-muted/50 p-1.5 rounded-xl w-max md:w-fit">
-            {tabs.map(tab => (
+            {visibleTabs.map(tab => (
               <Button
                 key={tab.key}
                 variant={activeTab === tab.key ? 'default' : 'ghost'}
@@ -71,6 +76,7 @@ const CommissionManagement: React.FC = () => {
         {activeTab === 'auditoria' && <ManagementAuditoria />}
         {activeTab === 'cargo' && <ManagementCargoDelivery />}
         {activeTab === 'history' && <ManagementHistory />}
+        {activeTab === 'access' && isAdmin && <ManagementAccess />}
       </div>
     </div>
   );

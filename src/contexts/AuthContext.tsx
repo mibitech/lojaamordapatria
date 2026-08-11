@@ -11,6 +11,7 @@ interface AuthContextType {
   userRole: string | null;
   fullName: string | null;
   isMember: boolean;
+  isAdmin: boolean;
   isCommissionMember: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
@@ -36,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
   const [isMember, setIsMember] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isCommissionMember, setIsCommissionMember] = useState(false);
 
   const fetchUserProfile = async (userId: string) => {
@@ -50,10 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Erro ao buscar roles do usuário:', rolesError);
       }
       
-      // Buscar is_commission_member e full_name da tabela profiles
+      // Buscar is_director_member e full_name da tabela profiles
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('is_commission_member, full_name')
+        .select('is_director_member, full_name')
         .eq('user_id', userId)
         .single();
       
@@ -63,20 +65,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Verificar se o usuário tem role 'member' ou 'admin'
       // Se rolesData for null, undefined ou array vazio, hasMemberRole deve ser false
-      const hasMemberRole = (rolesData && rolesData.length > 0) 
+      const hasMemberRole = (rolesData && rolesData.length > 0)
         ? rolesData.some(r => r.role === 'member' || r.role === 'admin')
         : false;
-      const isCommissionMember = profileData?.is_commission_member || false;
+      const hasAdminRole = (rolesData && rolesData.length > 0)
+        ? rolesData.some(r => r.role === 'admin')
+        : false;
+      const isCommissionMember = profileData?.is_director_member || false;
       const fullName = profileData?.full_name || null;
-      
-      return { 
+
+      return {
         isMember: hasMemberRole,
+        isAdmin: hasAdminRole,
         isCommissionMember,
         fullName
       };
     } catch (error) {
       console.error('Erro inesperado ao buscar perfil:', error);
-      return { isMember: false, isCommissionMember: false, fullName: null };
+      return { isMember: false, isAdmin: false, isCommissionMember: false, fullName: null };
     }
   };
 
@@ -93,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserRole(null);
           setFullName(null);
           setIsMember(false);
+          setIsAdmin(false);
           setIsCommissionMember(false);
           setLoading(false);
           localStorage.removeItem('supabase.auth.token');
@@ -116,10 +123,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           // LIMPAR ROLES ANTES de buscar novos dados
           setIsMember(false);
+          setIsAdmin(false);
           setIsCommissionMember(false);
           setUserRole(null);
           setFullName(null);
-          
+
           // Sync email to profiles table
           if (session.user.email) {
             supabase
@@ -132,10 +140,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           
           setTimeout(() => {
-            fetchUserProfile(session.user.id).then(({ isMember, isCommissionMember, fullName }) => {
+            fetchUserProfile(session.user.id).then(({ isMember, isAdmin, isCommissionMember, fullName }) => {
               setIsMember(isMember);
+              setIsAdmin(isAdmin);
               setIsCommissionMember(isCommissionMember);
-              setUserRole(isMember ? 'member' : null);
+              setUserRole(isAdmin ? 'admin' : isMember ? 'member' : null);
               setFullName(fullName);
               setLoading(false);
             });
@@ -150,10 +159,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserProfile(session.user.id).then(({ isMember, isCommissionMember, fullName }) => {
+        fetchUserProfile(session.user.id).then(({ isMember, isAdmin, isCommissionMember, fullName }) => {
           setIsMember(isMember);
+          setIsAdmin(isAdmin);
           setIsCommissionMember(isCommissionMember);
-          setUserRole(isMember ? 'member' : null);
+          setUserRole(isAdmin ? 'admin' : isMember ? 'member' : null);
           setFullName(fullName);
           setLoading(false);
         });
@@ -216,6 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserRole(null);
       setFullName(null);
       setIsMember(false);
+      setIsAdmin(false);
       setIsCommissionMember(false);
       
       // Clear localStorage manually
@@ -239,6 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserRole(null);
       setFullName(null);
       setIsMember(false);
+      setIsAdmin(false);
       setIsCommissionMember(false);
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('sb-bvrvhjxcqsjvrcdaffly-auth-token');
@@ -260,6 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userRole,
     fullName,
     isMember,
+    isAdmin,
     isCommissionMember,
     signIn,
     signUp,
