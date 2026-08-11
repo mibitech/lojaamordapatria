@@ -9,7 +9,8 @@
       "Bash(wc -l /c/Projetos/lojaamordapatria/src/pages/*.tsx)",
       "Bash(python -c ' *)",
       "Bash(python -)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(docker network *)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

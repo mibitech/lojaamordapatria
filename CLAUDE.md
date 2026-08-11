@@ -1,7 +1,7 @@
 # Loja Amor da Pátria — CLAUDE.md
 
 > **Fonte da verdade:** `docs/prd.md` · `docs/backlog.md` · `docs/decisions/`
-> Data: 2026-04-15 · Fase atual: **Sprint 1 — Débito Crítico**
+> Data: 2026-08-10 · Fase atual: **Sprint 1 — Débito Crítico**
 
 ---
 
@@ -34,7 +34,7 @@
 - [ ] Zero chamadas `supabase.from()` diretas em componentes View
 - [ ] Zero `as any` nos hooks `useFinancialData`, `useSecretary`, `useHospitalaria`, `useAuditLog`
 - [ ] Formulário de visitantes sem campos duplicados
-- [ ] `client.ts` usa apenas `import.meta.env.VITE_*`
+- [x] `client.ts` usa apenas `import.meta.env.VITE_*`
 
 ---
 
@@ -148,6 +148,7 @@ pnpm build          # build sem falhas
 - Conteúdo educacional (artigos, glossário, FAQ, livros, estudos)
 - Comunicação interna (mensagens, leitura rastreada)
 - Gestão e relatórios (KPIs, auditoria, venerabilíssimos)
+- **E-mails transacionais via Brevo** — confirmação de cadastro, recuperação e alteração de senha (`v1.0.1`)
 
 ### ❌ Bloqueantes identificados (Sprint 1)
 - Chamadas `supabase.from()` diretas em `CommissionSecretary.tsx`, `ChancelleryAttendanceReport.tsx`, `UserWorks.tsx` — viola arquitetura MVC
@@ -176,13 +177,14 @@ pnpm build          # build sem falhas
 ### Configuradas ✅
 | Variável | Onde | Uso |
 |----------|------|-----|
-| `VITE_SUPABASE_URL` | `.env.local` | URL do projeto Supabase |
-| `VITE_SUPABASE_ANON_KEY` | `.env.local` | Chave pública anon (client-side) |
+| `VITE_SUPABASE_URL` | `.env.local` | URL do projeto Supabase (✅ H-1 concluído — `client.ts` usa `import.meta.env`) |
+| `VITE_SUPABASE_ANON_KEY` | `.env.local` | Chave pública anon (✅ H-1 concluído) |
+| `BREVO_API_KEY` | Supabase Secret | Chave SMTP Brevo para Edge Function `send-email` |
+| `BREVO_SENDER_EMAIL` | Supabase Secret | E-mail remetente verificado no Brevo |
 
 ### Pendentes 🟡
 | Variável | Para que | Sprint |
 |----------|----------|--------|
-| `VITE_BREVO_API_KEY` | Envio de e-mails transacionais | Sprint 4 |
 | `VITE_STRIPE_PK` | Integração PIX/pagamentos | Sprint 6+ |
 | `N8N_WEBHOOK_URL` | Automações via n8n | Sprint 4 |
 
@@ -279,7 +281,7 @@ View → Controller (hook) → Service → Supabase / API externa
 | ID | Ação | Agente | Status |
 |----|------|--------|--------|
 | G-4 | Corrigir campos duplicados em `CommissionVisitors.tsx` (linhas 295–408) | implementação | [ ] |
-| H-1 | Verificar que `client.ts` usa apenas `import.meta.env.VITE_*` | implementação | [ ] |
+| H-1 | Verificar que `client.ts` usa apenas `import.meta.env.VITE_*` | implementação | [x] |
 
 ### Sprint 2 — Preview (próximo)
 - C-1..C-3: Testes unitários dos hooks críticos (Vitest + mock Supabase)
@@ -329,8 +331,8 @@ View → Controller (hook) → Service → Supabase / API externa
 ### Domínio: Auth & Perfil
 | Tabela | Descrição |
 |--------|-----------|
-| `profiles` | Dados pessoais do membro (nome, avatar, grau, CIM, status) |
-| `user_roles` | Papel do usuário: `admin`, `member`, `secretary` — use esta, não `profiles.role` |
+| `profiles` | Dados pessoais do membro (nome, avatar, grau, CIM, status). `is_director_member` = acesso às comissões (`/commission/*`) |
+| `user_roles` | **Fonte única de papel**: `admin`, `member`, `commission_member` (enum `app_role`). Libera a área dos irmãos (`/members/*`). `profiles.role` foi removida em 2026-08-10 |
 
 ### Domínio: Secretaria
 | Tabela | Descrição |
@@ -430,32 +432,42 @@ Atualize o `CLAUDE.md` sempre que ocorrer:
 
 ## 15. 📌 STATUS DA SESSÃO ATUAL
 
-> Última atualização: **2026-04-15** · Sessão: Planejamento e documentação
+> Última atualização: **2026-08-10** · Sessão: Controle de acessos + refatoração de papéis
 
-### ✅ Concluído nesta sessão
-- Leitura e análise completa de `docs/prd.md` e `docs/backlog.md`
-- Geração do `CLAUDE.md` com 16 seções (este arquivo)
-- Criação de `.claude/memory/sessao_atual.md` com resumo da sessão
-- Criação de `.claude/memory/MEMORY.md` com índice de memórias persistentes
+### ✅ Concluído nesta sessão (2026-08-10)
+- **Bug do CIM corrigido**: a policy de UPDATE em `profiles` só tinha `USING`, sem `WITH CHECK`. Como a expressão consultava a própria tabela (com RLS), ficava autorreferente e o UPDATE afetava zero linhas **sem erro** — gravações silenciosamente descartadas. Resolvido com `can_manage_profiles()` `SECURITY DEFINER` + `WITH CHECK`
+- **Tela de Gestão de Acessos** (`/commission/management` → aba Acessos, exclusiva de admin): concede/revoga Membro, Administrador e Diretoria sem SQL manual
+- `AuthContext` passou a expor `isAdmin` (antes `userRole` nunca assumia `'admin'`)
+- `is_commission_member` → **`is_director_member`**, com as 47 policies RLS de 37 tabelas recriadas
+- **`profiles.role` removida** — não era lida por código algum e competia com `user_roles.role`
+- Admin não pode revogar o próprio papel (UI + policy de DELETE) — ocorreu em produção e exigiu correção manual
+- Projeto Supabase restaurado após pausa (era a causa do "Failed to fetch" no login)
+- 4 migrations aplicadas em produção; commits `9783362`, `4e424e8`, `d87d511`, `c861b43` na `main`
 
-### 🎯 Bloqueantes (Sprint 1 — nenhuma task executada ainda)
+### ⚠️ Pendente imediato
+- **Deploy no servidor** — o schema de produção já mudou, mas o container roda código antigo. Rodar no servidor: `git pull origin main && docker compose build --no-cache && docker compose up -d`. Antes, conferir `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no `.env` do servidor (o Dockerfile faz `COPY .env`)
+- **`.env` está versionado no git** — viola a regra do projeto; tratar com `git rm --cached .env`
+- Policy redundante `"Admins can manage all roles"` ainda no banco
+- Criar 2º administrador — hoje só existe um
+- Criação de contas sem confirmação por e-mail (membros que não acessam e-mail) — decisões em aberto
+
+### 🎯 Bloqueantes restantes (Sprint 1)
 | ID | Arquivo | Problema |
 |----|---------|---------|
+| G-4 | `src/pages/CommissionVisitors.tsx` linhas 295–408 | Campos de telefone duplicados |
 | A-1 | `src/pages/CommissionSecretary.tsx` | 6x `supabase.from()` direto na View |
 | A-2 | `src/components/chancellery/ChancelleryAttendanceReport.tsx` | 4 selects diretos na View |
 | A-3 | `src/pages/UserWorks.tsx` | Mutations diretas sem hook |
 | B-1 | `src/hooks/useFinancialData.ts` | 14x `as any` |
 | B-2 | `src/hooks/useSecretary.ts` | 6x `as any` |
 | B-3 | `src/hooks/useHospitalaria.ts` + `useAuditLog.ts` | 6x `as any` |
-| G-4 | `src/pages/CommissionVisitors.tsx` linhas 295–408 | Campos de telefone duplicados |
-| H-1 | `src/integrations/supabase/client.ts` | Verificar `import.meta.env.VITE_*` |
 
 ### 📋 Próximo passo exato (início da próxima sessão)
-1. **H-1** — ler `src/integrations/supabase/client.ts` e verificar variáveis de ambiente (5 min)
-2. **G-4** — corrigir campos duplicados em `CommissionVisitors.tsx` (~1h)
-3. **A-1** — ler `CommissionSecretary.tsx` e extrair chamadas Supabase para `useSecretary.ts`
+1. **Deploy no servidor** — pendência mais urgente: produção roda código antigo contra schema novo
+2. **G-4** — corrigir campos de telefone duplicados em `CommissionVisitors.tsx` linhas 295–408 (~1h)
+3. **A-1** — ler `CommissionSecretary.tsx` e extrair 6 chamadas `supabase.from()` para `useSecretary.ts`
 
 ### 💾 Memória persistida
-- `.claude/memory/sessao_atual.md` — resumo completo da sessão
-- `.claude/memory/MEMORY.md` — índice de memórias do projeto
-- `C:\Users\rlcun\.claude\projects\...\memory\` — memórias do sistema Claude Code
+- `.claude/memory/sessao_atual.md` — resumo completo desta sessão
+- `.claude/memory/MEMORY.md` — índice + infraestrutura configurada
+- `C:\Users\rlcun\.claude\projects\...\memory\project_brevo.md` — detalhes da integração Brevo
