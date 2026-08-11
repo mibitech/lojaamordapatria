@@ -62,13 +62,13 @@ const profileSchema = z.object({
   position: z.string().optional(),
   commission: z.string().optional(),
   masonic_degree: z.number().min(1).max(33),
-  is_commission_member: z.boolean().default(false),
+  is_director_member: z.boolean().default(false),
   member_status: z.string().default('Ativo'),
   graduation: z.string().default('Aprendiz'),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
-type SortField = 'full_name' | 'masonic_degree' | 'is_commission_member';
+type SortField = 'full_name' | 'masonic_degree' | 'is_director_member';
 type SortOrder = 'asc' | 'desc';
 
 const DATE_TYPES = [
@@ -119,7 +119,7 @@ const CommissionProfiles: React.FC = () => {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      is_commission_member: false,
+      is_director_member: false,
       member_status: 'Ativo',
       graduation: 'Aprendiz',
       masonic_degree: 1,
@@ -159,8 +159,8 @@ const CommissionProfiles: React.FC = () => {
 
       const matchesCommission =
         commissionFilter === 'all' ||
-        (commissionFilter === 'commission' && profile.is_commission_member) ||
-        (commissionFilter === 'regular' && !profile.is_commission_member);
+        (commissionFilter === 'commission' && profile.is_director_member) ||
+        (commissionFilter === 'regular' && !profile.is_director_member);
 
       return matchesSearch && matchesDegree && matchesCommission;
     });
@@ -172,8 +172,8 @@ const CommissionProfiles: React.FC = () => {
         comparison = (a.full_name || '').localeCompare(b.full_name || '');
       } else if (sortField === 'masonic_degree') {
         comparison = a.masonic_degree - b.masonic_degree;
-      } else if (sortField === 'is_commission_member') {
-        comparison = (a.is_commission_member === b.is_commission_member ? 0 : a.is_commission_member ? -1 : 1);
+      } else if (sortField === 'is_director_member') {
+        comparison = (a.is_director_member === b.is_director_member ? 0 : a.is_director_member ? -1 : 1);
       }
 
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -212,7 +212,7 @@ const CommissionProfiles: React.FC = () => {
       position: profile.position || '',
       commission: profile.commission || '',
       masonic_degree: profile.masonic_degree,
-      is_commission_member: profile.is_commission_member,
+      is_director_member: profile.is_director_member,
       member_status: profile.member_status ?? 'Ativo',
       graduation: (profile as any).graduation ?? 'Aprendiz',
     });
@@ -327,7 +327,7 @@ const CommissionProfiles: React.FC = () => {
         position: data.position || null,
         commission: data.commission || null,
         masonic_degree: data.masonic_degree,
-        is_commission_member: data.is_commission_member,
+        is_director_member: data.is_director_member,
         member_status: data.member_status,
         graduation: data.graduation,
       } as any);
@@ -463,11 +463,11 @@ const CommissionProfiles: React.FC = () => {
                   <TableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort('is_commission_member')}
+                      onClick={() => handleSort('is_director_member')}
                       className="flex items-center font-semibold"
                     >
                       Tipo
-                      {getSortIcon('is_commission_member')}
+                      {getSortIcon('is_director_member')}
                     </Button>
                   </TableHead>
                   <TableHead>Situação</TableHead>
@@ -492,7 +492,7 @@ const CommissionProfiles: React.FC = () => {
                         <Badge variant="outline">{getDegreeLabel(profile.masonic_degree)}</Badge>
                       </TableCell>
                       <TableCell>
-                        {profile.is_commission_member ? (
+                        {profile.is_director_member ? (
                           <div className="flex items-center text-sm">
                             <Shield className="w-4 h-4 mr-2 text-blue-600" />
                             <span className="text-blue-600">Comissão</span>
@@ -570,7 +570,7 @@ const CommissionProfiles: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">{getDegreeLabel(profile.masonic_degree)}</Badge>
-                  {profile.is_commission_member && (
+                  {profile.is_director_member && (
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                       <Shield className="w-3 h-3 mr-1" />
                       Comissão
@@ -735,11 +735,11 @@ const CommissionProfiles: React.FC = () => {
 
             <div className="flex items-center space-x-2">
               <Switch
-                id="is_commission_member"
-                checked={watch('is_commission_member')}
-                onCheckedChange={(checked) => setValue('is_commission_member', checked)}
+                id="is_director_member"
+                checked={watch('is_director_member')}
+                onCheckedChange={(checked) => setValue('is_director_member', checked)}
               />
-              <Label htmlFor="is_commission_member">Membro da Comissão</Label>
+              <Label htmlFor="is_director_member">Membro da Comissão</Label>
             </div>
 
             {/* Commemoration Dates Section */}

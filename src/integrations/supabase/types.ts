@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       activities: {
@@ -1299,13 +1324,12 @@ export type Database = {
           full_name: string | null
           graduation: string
           id: string
-          is_commission_member: boolean | null
+          is_director_member: boolean | null
           masonic_degree: number | null
           member_status: string
           phone: string | null
           photo_url: string | null
           position: string | null
-          role: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -1317,13 +1341,12 @@ export type Database = {
           full_name?: string | null
           graduation?: string
           id?: string
-          is_commission_member?: boolean | null
+          is_director_member?: boolean | null
           masonic_degree?: number | null
           member_status?: string
           phone?: string | null
           photo_url?: string | null
           position?: string | null
-          role?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1335,13 +1358,12 @@ export type Database = {
           full_name?: string | null
           graduation?: string
           id?: string
-          is_commission_member?: boolean | null
+          is_director_member?: boolean | null
           masonic_degree?: number | null
           member_status?: string
           phone?: string | null
           photo_url?: string | null
           position?: string | null
-          role?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1899,6 +1921,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_profiles: { Args: { _user_id: string }; Returns: boolean }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
@@ -1910,6 +1933,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "member" | "commission_member"
@@ -2039,6 +2063,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "member", "commission_member"],

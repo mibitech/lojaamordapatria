@@ -29,7 +29,7 @@ interface ProfileData {
   phone: string;
   email: string;
   photo_url: string;
-  is_commission_member: boolean;
+  is_director_member: boolean;
   commission: string;
 }
 
@@ -66,7 +66,7 @@ const Profile: React.FC = () => {
     phone: '',
     email: '',
     photo_url: '',
-    is_commission_member: false,
+    is_director_member: false,
     commission: ''
   });
 
@@ -115,7 +115,7 @@ const Profile: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, cim, full_name, position, phone, email, photo_url, is_commission_member, commission')
+        .select('id, cim, full_name, position, phone, email, photo_url, is_director_member, commission')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -131,7 +131,7 @@ const Profile: React.FC = () => {
           phone: data.phone || '',
           email: data.email || '',
           photo_url: data.photo_url || '',
-          is_commission_member: data.is_commission_member || false,
+          is_director_member: data.is_director_member || false,
           commission: data.commission || ''
         });
         // Load existing photo if available
@@ -563,12 +563,12 @@ const Profile: React.FC = () => {
                       </Label>
                       <div className="h-11 px-3 py-2 bg-muted/50 rounded-md border border-border flex items-center">
                         <span className="text-foreground">
-                          {profileData.is_commission_member ? 'Sim' : 'Não'}
+                          {profileData.is_director_member ? 'Sim' : 'Não'}
                         </span>
                       </div>
                     </div>
 
-                    {profileData.is_commission_member && profileData.commission && (
+                    {profileData.is_director_member && profileData.commission && (
                       <div className="space-y-2">
                         <Label className="text-base font-semibold text-muted-foreground">
                           Comissão
