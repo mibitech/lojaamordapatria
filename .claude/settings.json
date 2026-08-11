@@ -6,12 +6,18 @@
       "Bash(supabase:*)",
       "Bash(npx playwright:*)",
       "Bash(xargs cat *)",
-      "Bash(wc -l /c/Projetos/lojaamordapatria/src/pages/*.tsx)"
+      "Bash(wc -l /c/Projetos/lojaamordapatria/src/pages/*.tsx)",
+      "Bash(python -c ' *)",
+      "Bash(python -)",
+      "Bash(git check-ignore *)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
       "Bash(git push --force:*)",
       "Bash(git reset --hard:*)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   },
   "hooks": {
