@@ -12,8 +12,7 @@ export interface Profile {
   email?: string;
   photo_url?: string;
   masonic_degree: number;
-  is_commission_member: boolean;
-  role?: string;
+  is_director_member: boolean;
   commission?: string;
   member_status: string;
   created_at: string;
@@ -57,6 +56,11 @@ export const useProfiles = () => {
 
       if (error) throw error;
 
+      // RLS bloqueado retorna zero linhas sem erro — não trate como sucesso
+      if (!data) {
+        throw new Error('Nenhuma linha foi atualizada. Verifique suas permissões.');
+      }
+
       toast({
         title: 'Sucesso',
         description: 'Perfil atualizado com sucesso',
@@ -68,7 +72,7 @@ export const useProfiles = () => {
       console.error('Error updating profile:', error);
       toast({
         title: 'Erro',
-        description: 'Falha ao atualizar perfil',
+        description: error instanceof Error ? error.message : 'Falha ao atualizar perfil',
         variant: 'destructive',
       });
       throw error;
