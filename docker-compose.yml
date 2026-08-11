@@ -1,20 +1,17 @@
 version: '3.8'
 services:
   frontend:
-    build: .
-    image: loja306:latest
-    container_name: loja306
+    image: ghcr.io/mibitech/lojaamordapatria:latest   # atualizado pelo CI com tag SHA
     environment:
       - NODE_ENV=production
       - DEBUG=false
     expose:
       - 80
-    restart: unless-stopped
     deploy:
       replicas: 1
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.loja306.rule=Host(`www.amordapatria.com.br`)"
+        - "traefik.http.routers.loja306.rule=Host(`www.amordapatria.com.br`) || Host(`amordapatria.com.br`)"
         - "traefik.http.routers.loja306.entrypoints=websecure"
         - "traefik.http.routers.loja306.tls.certresolver=letsencryptresolver"
         - "traefik.http.services.loja306.loadbalancer.server.port=80"

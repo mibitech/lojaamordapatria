@@ -10,7 +10,13 @@
       "Bash(python -c ' *)",
       "Bash(python -)",
       "Bash(git check-ignore *)",
-      "Bash(docker network *)"
+      "Bash(docker network *)",
+      "Bash(ssh-add -l)",
+      "Bash(docker version *)",
+      "Bash(git remote *)",
+      "Bash(node -e ' *)",
+      "Bash(docker compose *)",
+      "Bash(git rm *)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
