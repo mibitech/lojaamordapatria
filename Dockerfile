@@ -1,9 +1,20 @@
 # Dockerfile para aplicação React (Vite)
-FROM node:20-alpine AS build
+# node:22 igual aos demais frontends da suíte — o corepack do node:20 é mais
+# antigo e pode falhar ao verificar a assinatura de versões recentes do pnpm.
+FROM node:22-alpine AS build
 WORKDIR /app
 
-# Instalar pnpm globalmente
-RUN npm install -g pnpm
+# corepack usa a versão fixada em package.json ("packageManager": "pnpm@10.33.0"),
+# igual ao nexus, aurora, cofre e pipeflow-crm.
+#
+# Antes era `npm install -g pnpm`, sem versão: cada build pegava o pnpm mais
+# novo do dia. Isso quebrou o deploy do pipeflow-crm em 2026-08-27, sem ninguém
+# ter mexido naquele projeto — uma versão nova passou a exigir o binário nativo
+# do próprio pnpm registrado no lockfile
+# (ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE), e o lock, gerado por versão
+# anterior, não tem essa entrada. Aqui era a mesma bomba-relógio esperando o
+# próximo deploy.
+RUN corepack enable
 
 # Copiar arquivos de dependências
 COPY package.json pnpm-lock.yaml ./
