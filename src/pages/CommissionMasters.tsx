@@ -32,11 +32,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasters, WorshipfulMaster } from '@/hooks/useMasters';
 import { ImageUpload, ImageItem } from '@/components/ImageUpload';
+import { MemberNameCombobox } from '@/components/MemberNameCombobox';
+import { DateField } from '@/components/DateField';
+import { MasterOfficersDialog } from '@/components/MasterOfficersDialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -50,10 +51,10 @@ import {
   ArrowDown,
   Calendar as CalendarIcon,
   Crown,
+  Users,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 
 const masterSchema = z.object({
   name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(200, 'Nome muito longo'),
@@ -79,6 +80,7 @@ const CommissionMasters: React.FC = () => {
   const [editingMaster, setEditingMaster] = useState<WorshipfulMaster | null>(null);
   const [deletingMasterId, setDeletingMasterId] = useState<string | null>(null);
   const [masterImages, setMasterImages] = useState<ImageItem[]>([]);
+  const [officersMaster, setOfficersMaster] = useState<WorshipfulMaster | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -186,6 +188,8 @@ const CommissionMasters: React.FC = () => {
     });
     setIsDialogOpen(true);
   };
+
+  const openOfficersDialog = (master: WorshipfulMaster) => setOfficersMaster(master);
 
   const openDeleteDialog = (masterId: string) => {
     setDeletingMasterId(masterId);
@@ -411,6 +415,14 @@ const CommissionMasters: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => openOfficersDialog(master)}
+                            title="Diretoria da gestão"
+                          >
+                            <Users className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => openEditDialog(master)}
                           >
                             <Edit className="w-4 h-4" />
@@ -466,6 +478,14 @@ const CommissionMasters: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => openOfficersDialog(master)}
+                      title="Diretoria da gestão"
+                    >
+                      <Users className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openEditDialog(master)}
                     >
                       <Edit className="w-4 h-4" />
@@ -509,10 +529,12 @@ const CommissionMasters: React.FC = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Label htmlFor="name">Nome *</Label>
-              <Input
+              <MemberNameCombobox
                 id="name"
-                {...register('name')}
-                placeholder="Digite o nome completo"
+                value={watch('name') ?? ''}
+                onChange={(name) =>
+                  setValue('name', name, { shouldValidate: true, shouldDirty: true })
+                }
               />
               {errors.name && (
                 <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
@@ -533,58 +555,32 @@ const CommissionMasters: React.FC = () => {
             </div>
 
             <div>
-              <Label>Data de Início do Mandato *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !startDate && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione a data'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => setValue('term_start_date', date as Date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="term_start_date">Data de Início do Mandato *</Label>
+              <DateField
+                id="term_start_date"
+                value={startDate}
+                onChange={(date) =>
+                  setValue('term_start_date', date as Date, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
+              />
               {errors.term_start_date && (
                 <p className="text-sm text-destructive mt-1">{errors.term_start_date.message}</p>
               )}
             </div>
 
             <div>
-              <Label>Data de Término do Mandato</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      'w-full justify-start text-left font-normal',
-                      !endDate && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione a data (opcional)'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(date) => setValue('term_end_date', date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="term_end_date">Data de Término do Mandato</Label>
+              <DateField
+                id="term_end_date"
+                value={endDate}
+                onChange={(date) =>
+                  setValue('term_end_date', date, { shouldDirty: true })
+                }
+                placeholder="dd/mm/aaaa (opcional)"
+              />
             </div>
 
             <div>
@@ -665,6 +661,14 @@ const CommissionMasters: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MasterOfficersDialog
+        open={Boolean(officersMaster)}
+        onOpenChange={(open) => !open && setOfficersMaster(null)}
+        masterId={officersMaster?.id ?? null}
+        masterName={officersMaster?.name ?? ''}
+        installationYear={officersMaster?.installation_year ?? new Date().getFullYear()}
+      />
     </div>
   );
 };

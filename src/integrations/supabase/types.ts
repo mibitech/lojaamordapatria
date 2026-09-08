@@ -1869,6 +1869,57 @@ export type Database = {
           },
         ]
       }
+      worshipful_master_officers: {
+        Row: {
+          created_at: string
+          id: string
+          master_id: string
+          person_name: string | null
+          photo_url: string | null
+          position: Database["public"]["Enums"]["officer_position"]
+          profile_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          master_id: string
+          person_name?: string | null
+          photo_url?: string | null
+          position: Database["public"]["Enums"]["officer_position"]
+          profile_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          master_id?: string
+          person_name?: string | null
+          photo_url?: string | null
+          position?: Database["public"]["Enums"]["officer_position"]
+          profile_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worshipful_master_officers_master_id_fkey"
+            columns: ["master_id"]
+            isOneToOne: false
+            referencedRelation: "worshipful_masters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worshipful_master_officers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       worshipful_masters: {
         Row: {
           achievements: string | null
@@ -1936,6 +1987,25 @@ export type Database = {
     Enums: {
       app_role: "admin" | "member" | "commission_member"
       financial_transaction_type: "receita" | "despesa"
+      officer_position:
+        | "veneravel"
+        | "primeiro_vigilante"
+        | "segundo_vigilante"
+        | "orador"
+        | "secretario"
+        | "tesoureiro"
+        | "chanceler"
+        | "primeiro_experto"
+        | "segundo_experto"
+        | "primeiro_diacono"
+        | "segundo_diacono"
+        | "mestre_cerimonias"
+        | "deputado"
+        | "delegado"
+        | "dep_federal"
+        | "dep_federal_suplente"
+        | "dep_estadual"
+        | "dep_estadual_suplente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2068,6 +2138,26 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "member", "commission_member"],
       financial_transaction_type: ["receita", "despesa"],
+      officer_position: [
+        "veneravel",
+        "primeiro_vigilante",
+        "segundo_vigilante",
+        "orador",
+        "secretario",
+        "tesoureiro",
+        "chanceler",
+        "primeiro_experto",
+        "segundo_experto",
+        "primeiro_diacono",
+        "segundo_diacono",
+        "mestre_cerimonias",
+        "deputado",
+        "delegado",
+        "dep_federal",
+        "dep_federal_suplente",
+        "dep_estadual",
+        "dep_estadual_suplente",
+      ],
     },
   },
 } as const

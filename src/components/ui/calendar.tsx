@@ -22,6 +22,14 @@ function Calendar({
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium",
+        // Usados quando captionLayout="dropdown-buttons": permitem pular
+        // direto para um mês/ano distante sem navegar de mês em mês.
+        caption_dropdowns: "flex justify-center gap-1",
+        dropdown:
+          "absolute inset-0 h-full w-full cursor-pointer opacity-0",
+        dropdown_month: "relative inline-flex items-center",
+        dropdown_year: "relative inline-flex items-center",
+        vhidden: "hidden",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
