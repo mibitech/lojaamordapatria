@@ -68,7 +68,7 @@ const About: React.FC = () => {
         const { data: mastersData } = await supabase
           .from('worshipful_masters')
           .select('*')
-          .order('sort_order');
+          .order('installation_year', { ascending: false });
 
         setLodgeInfo(lodge);
         setOfficers(officersData || []);
