@@ -31,3 +31,9 @@ supabase/.temp/
 
 # Variaveis de ambiente (build usa build-args do CI)
 .env
+
+# Backup pre-migracao CIM (dados pessoais: CPF, e-mails) — nunca versionar
+.backup-pre-cim-*/
+
+# Dados pessoais (CPF) do provisionamento inicial — nunca versionar
+scripts/seed-members.json

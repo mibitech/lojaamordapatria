@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -37,14 +37,19 @@ import CommissionBooks from "./pages/CommissionBooks";
 import CommissionArticles from "./pages/CommissionArticles";
 import CommissionGlossary from "./pages/CommissionGlossary";
 import CommissionFAQ from "./pages/CommissionFAQ";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { isMember } = useAuth();
+  const { isMember, user, mustChangePassword } = useAuth();
+  const location = useLocation();
+
+  // Força a troca da senha inicial (6 primeiros dígitos do CPF) antes de liberar o restante do app
+  if (user && mustChangePassword && location.pathname !== '/profile') {
+    return <Navigate to="/profile" replace />;
+  }
+
   return (
     <>
       <Navigation />
@@ -52,8 +57,6 @@ const AppContent = () => {
         <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/about" element={<About />} />
             <Route path="/activities" element={<Activities />} />

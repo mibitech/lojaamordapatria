@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Mail, Phone, Briefcase, Camera, Calendar, Trash2, Plus, Pencil, X } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, Camera, Calendar, Trash2, Plus, Pencil, X, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { signInWithCim } from '@/integrations/supabase/auth.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,10 +54,17 @@ const DATE_TYPES = [
 ] as const;
 
 const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updatePassword, mustChangePassword, clearMustChangePassword } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+
+  // Change password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [profileImages, setProfileImages] = useState<ImageItem[]>([]);
   const [profileData, setProfileData] = useState<ProfileData>({
     id: '',
@@ -306,6 +314,69 @@ const Profile: React.FC = () => {
     setNewDateDescription('');
     setNewDateValue(undefined);
     setNewDateInput('');
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== newPasswordConfirm) {
+      toast({
+        variant: "destructive",
+        title: "Senhas não coincidem",
+        description: "Confirme a nova senha corretamente."
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Senha muito curta",
+        description: "A nova senha deve ter no mínimo 6 caracteres."
+      });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      // Reautentica com a senha atual antes de trocar, por segurança
+      const { error: reauthError } = await signInWithCim(profileData.cim, currentPassword);
+      if (reauthError) {
+        toast({
+          variant: "destructive",
+          title: "Senha atual incorreta",
+          description: "Confirme a senha atual e tente novamente."
+        });
+        return;
+      }
+
+      const { error } = await updatePassword(newPassword);
+      if (error) throw error;
+
+      await supabase
+        .from('profiles')
+        .update({ must_change_password: false })
+        .eq('user_id', user.id);
+      clearMustChangePassword();
+
+      toast({
+        title: "Senha alterada",
+        description: "Sua senha foi atualizada com sucesso."
+      });
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordConfirm('');
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao alterar senha",
+        description: "Não foi possível atualizar sua senha."
+      });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleDateTypeChange = (value: string) => {
@@ -580,6 +651,82 @@ const Profile: React.FC = () => {
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Change Password Section */}
+                <div className="space-y-4 pt-6 border-t border-border">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <KeyRound className="w-5 h-5" />
+                    Alterar Senha
+                  </h3>
+
+                  {mustChangePassword && (
+                    <div className="p-3 rounded-md border border-destructive/50 bg-destructive/10 text-sm text-destructive">
+                      Você ainda está usando a senha inicial (gerada a partir do seu CPF). Por segurança, defina uma senha própria abaixo.
+                    </div>
+                  )}
+
+                  <div className="space-y-4 p-4 rounded-lg border bg-muted/30 border-border">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="current_password">Senha atual *</Label>
+                        <Input
+                          id="current_password"
+                          type={showPasswords ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="••••••••"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new_password">Nova senha *</Label>
+                        <Input
+                          id="new_password"
+                          type={showPasswords ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="••••••••"
+                          minLength={6}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new_password_confirm">Confirmar nova senha *</Label>
+                        <Input
+                          id="new_password_confirm"
+                          type={showPasswords ? 'text' : 'password'}
+                          value={newPasswordConfirm}
+                          onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                          placeholder="••••••••"
+                          minLength={6}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPasswords(!showPasswords)}
+                      >
+                        {showPasswords ? (
+                          <><EyeOff className="w-4 h-4 mr-2" /> Ocultar senhas</>
+                        ) : (
+                          <><Eye className="w-4 h-4 mr-2" /> Mostrar senhas</>
+                        )}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleChangePassword}
+                        disabled={changingPassword || !currentPassword || !newPassword || !newPasswordConfirm}
+                      >
+                        <KeyRound className="w-4 h-4 mr-2" />
+                        {changingPassword ? 'Alterando...' : 'Alterar Senha'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

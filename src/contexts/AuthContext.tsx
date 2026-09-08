@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { signInWithCim, changePassword } from '@/integrations/supabase/auth.service';
 import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -13,11 +14,11 @@ interface AuthContextType {
   isMember: boolean;
   isAdmin: boolean;
   isCommissionMember: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
+  mustChangePassword: boolean;
+  signIn: (cim: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
+  clearMustChangePassword: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isMember, setIsMember] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCommissionMember, setIsCommissionMember] = useState(false);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -52,10 +54,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Erro ao buscar roles do usuário:', rolesError);
       }
       
-      // Buscar is_director_member e full_name da tabela profiles
+      // Buscar is_director_member, full_name e must_change_password da tabela profiles
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('is_director_member, full_name')
+        .select('is_director_member, full_name, must_change_password')
         .eq('user_id', userId)
         .single();
       
@@ -73,16 +75,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         : false;
       const isCommissionMember = profileData?.is_director_member || false;
       const fullName = profileData?.full_name || null;
+      const mustChangePassword = profileData?.must_change_password || false;
 
       return {
         isMember: hasMemberRole,
         isAdmin: hasAdminRole,
         isCommissionMember,
-        fullName
+        fullName,
+        mustChangePassword
       };
     } catch (error) {
       console.error('Erro inesperado ao buscar perfil:', error);
-      return { isMember: false, isAdmin: false, isCommissionMember: false, fullName: null };
+      return { isMember: false, isAdmin: false, isCommissionMember: false, fullName: null, mustChangePassword: false };
     }
   };
 
@@ -101,49 +105,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsMember(false);
           setIsAdmin(false);
           setIsCommissionMember(false);
+          setMustChangePassword(false);
           setLoading(false);
           localStorage.removeItem('supabase.auth.token');
-          localStorage.removeItem('sb-bvrvhjxcqsjvrcdaffly-auth-token');
           return;
         }
-        
+
         // Se há sessão, atualizar
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // If email confirmation happened, automatically sign out
-        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && !session?.user?.last_sign_in_at) {
-          setTimeout(() => {
-            signOut();
-          }, 1000);
-          return;
-        }
-        
+
         // Fetch user profile if authenticated
         if (session?.user) {
           // LIMPAR ROLES ANTES de buscar novos dados
           setIsMember(false);
           setIsAdmin(false);
           setIsCommissionMember(false);
+          setMustChangePassword(false);
           setUserRole(null);
           setFullName(null);
 
-          // Sync email to profiles table
-          if (session.user.email) {
-            supabase
-              .from('profiles')
-              .update({ email: session.user.email })
-              .eq('user_id', session.user.id)
-              .then(({ error }) => {
-                if (error) console.error('Erro ao sincronizar email no perfil:', error);
-              });
-          }
-          
           setTimeout(() => {
-            fetchUserProfile(session.user.id).then(({ isMember, isAdmin, isCommissionMember, fullName }) => {
+            fetchUserProfile(session.user.id).then(({ isMember, isAdmin, isCommissionMember, fullName, mustChangePassword }) => {
               setIsMember(isMember);
               setIsAdmin(isAdmin);
               setIsCommissionMember(isCommissionMember);
+              setMustChangePassword(mustChangePassword);
               setUserRole(isAdmin ? 'admin' : isMember ? 'member' : null);
               setFullName(fullName);
               setLoading(false);
@@ -159,10 +146,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserProfile(session.user.id).then(({ isMember, isAdmin, isCommissionMember, fullName }) => {
+        fetchUserProfile(session.user.id).then(({ isMember, isAdmin, isCommissionMember, fullName, mustChangePassword }) => {
           setIsMember(isMember);
           setIsAdmin(isAdmin);
           setIsCommissionMember(isCommissionMember);
+          setMustChangePassword(mustChangePassword);
           setUserRole(isAdmin ? 'admin' : isMember ? 'member' : null);
           setFullName(fullName);
           setLoading(false);
@@ -175,39 +163,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const signIn = async (cim: string, password: string) => {
+    const { error } = await signInWithCim(cim, password);
     return { error };
   };
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName
-        }
-      }
-    });
-    return { error };
-  };
-
-  const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return { error };
-  };
+  const clearMustChangePassword = () => setMustChangePassword(false);
 
   const updatePassword = async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await changePassword(newPassword);
 
     if (!error) {
       supabase.functions
@@ -228,11 +192,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsMember(false);
       setIsAdmin(false);
       setIsCommissionMember(false);
-      
+      setMustChangePassword(false);
+
       // Clear localStorage manually
       localStorage.removeItem('supabase.auth.token');
-      localStorage.removeItem('sb-bvrvhjxcqsjvrcdaffly-auth-token');
-      
+
       // Then sign out from Supabase
       await supabase.auth.signOut();
 
@@ -252,8 +216,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsMember(false);
       setIsAdmin(false);
       setIsCommissionMember(false);
+      setMustChangePassword(false);
       localStorage.removeItem('supabase.auth.token');
-      localStorage.removeItem('sb-bvrvhjxcqsjvrcdaffly-auth-token');
 
       toast({
         title: "Erro",
@@ -274,11 +238,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isMember,
     isAdmin,
     isCommissionMember,
+    mustChangePassword,
     signIn,
-    signUp,
     signOut,
-    resetPassword,
     updatePassword,
+    clearMustChangePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
