@@ -1995,6 +1995,7 @@ export type Database = {
         | "secretario"
         | "tesoureiro"
         | "chanceler"
+        | "hospitaleiro"
         | "primeiro_experto"
         | "segundo_experto"
         | "primeiro_diacono"
@@ -2002,6 +2003,7 @@ export type Database = {
         | "mestre_cerimonias"
         | "deputado"
         | "delegado"
+        | "representante"
         | "dep_federal"
         | "dep_federal_suplente"
         | "dep_estadual"
@@ -2146,6 +2148,7 @@ export const Constants = {
         "secretario",
         "tesoureiro",
         "chanceler",
+        "hospitaleiro",
         "primeiro_experto",
         "segundo_experto",
         "primeiro_diacono",
@@ -2153,6 +2156,7 @@ export const Constants = {
         "mestre_cerimonias",
         "deputado",
         "delegado",
+        "representante",
         "dep_federal",
         "dep_federal_suplente",
         "dep_estadual",
