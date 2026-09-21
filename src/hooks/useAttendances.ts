@@ -58,24 +58,31 @@ export const useAttendances = (sessionId?: string) => {
   /**
    * Grava todas as presenças de uma vez (upsert em lote).
    * presence: mapa profileId → is_present
-   * profileDefaults: posição padrão por profileId (usada somente em inserts novos)
+   * positions: cargo escolhido na tela por profileId; cai no padrão do perfil
+   *            quando o usuário não mexeu no select
+   * profileDefaults: posição padrão por profileId (vinda de profiles.position)
    */
   const saveAllPresence = async (
     sid: string,
     presence: Record<string, boolean>,
-    profileDefaults: Record<string, string | null>
+    profileDefaults: Record<string, string | null>,
+    positions: Record<string, string | null> = {}
   ) => {
     try {
       const { data: existing, error: fetchError } = await supabase
         .from("session_attendances")
-        .select("id, profile_id, is_present")
+        .select("id, profile_id, is_present, position_override")
         .eq("session_id", sid);
 
       if (fetchError) throw fetchError;
 
       const existingMap = new Map(existing?.map(e => [e.profile_id, e]) ?? []);
 
-      const toUpdate: { id: string; is_present: boolean }[] = [];
+      // Cargo a gravar: o escolhido na tela tem precedência sobre o padrão do perfil
+      const resolvePosition = (profileId: string) =>
+        positions[profileId] ?? profileDefaults[profileId] ?? null;
+
+      const toUpdate: { id: string; is_present: boolean; position_override: string | null }[] = [];
       const toInsert: {
         session_id: string;
         profile_id: string;
@@ -85,9 +92,11 @@ export const useAttendances = (sessionId?: string) => {
 
       Object.entries(presence).forEach(([profileId, isPresent]) => {
         const rec = existingMap.get(profileId);
+        const position = resolvePosition(profileId);
+
         if (rec) {
-          if (rec.is_present !== isPresent) {
-            toUpdate.push({ id: rec.id, is_present: isPresent });
+          if (rec.is_present !== isPresent || rec.position_override !== position) {
+            toUpdate.push({ id: rec.id, is_present: isPresent, position_override: position });
           }
         } else if (isPresent) {
           // Só cria registro novo se o membro foi marcado como presente
@@ -95,15 +104,18 @@ export const useAttendances = (sessionId?: string) => {
             session_id: sid,
             profile_id: profileId,
             is_present: true,
-            position_override: profileDefaults[profileId] ?? null,
+            position_override: position,
           });
         }
       });
 
       if (toUpdate.length > 0) {
         await Promise.all(
-          toUpdate.map(({ id, is_present }) =>
-            supabase.from("session_attendances").update({ is_present }).eq("id", id)
+          toUpdate.map(({ id, is_present, position_override }) =>
+            supabase
+              .from("session_attendances")
+              .update({ is_present, position_override })
+              .eq("id", id)
           )
         );
       }

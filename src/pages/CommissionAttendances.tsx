@@ -96,6 +96,7 @@ const CommissionAttendances: React.FC = () => {
 
   // Presença local — só vai para o banco ao clicar em Gravar
   const [localPresence, setLocalPresence] = useState<Record<string, boolean>>({});
+  const [localPositions, setLocalPositions] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
   // Livro — estado local, nunca persistido
@@ -131,20 +132,27 @@ const CommissionAttendances: React.FC = () => {
     setSelectedSessionId(closest.id);
   }, [sessions]);
 
-  // Inicializa localPresence a partir dos dados do banco sempre que attendances mudar
+  // Inicializa presença e cargo a partir dos dados do banco sempre que attendances mudar
   useEffect(() => {
-    const initial: Record<string, boolean> = {};
+    const initialPresence: Record<string, boolean> = {};
+    const initialPositions: Record<string, string> = {};
     profiles.forEach(p => {
       const att = attendances.find(a => a.profile_id === p.id);
-      initial[p.id] = att?.is_present ?? false;
+      initialPresence[p.id] = att?.is_present ?? false;
+      initialPositions[p.id] = att?.position_override ?? p.position ?? "";
     });
-    setLocalPresence(initial);
+    setLocalPresence(initialPresence);
+    setLocalPositions(initialPositions);
   }, [attendances, profiles]);
 
-  // Detecta alterações não salvas
+  // Detecta alterações não salvas (presença ou cargo)
   const isDirty = profiles.some(p => {
-    const dbState = attendances.find(a => a.profile_id === p.id)?.is_present ?? false;
-    return (localPresence[p.id] ?? false) !== dbState;
+    const att = attendances.find(a => a.profile_id === p.id);
+    const presenceChanged = (localPresence[p.id] ?? false) !== (att?.is_present ?? false);
+    const positionChanged =
+      (localPositions[p.id] ?? "") !== (att?.position_override ?? p.position ?? "");
+    // Cargo sem presença marcada não gera registro, então não conta como alteração
+    return presenceChanged || (positionChanged && (localPresence[p.id] ?? false));
   });
 
   // Contadores baseados no estado local
@@ -184,8 +192,12 @@ const CommissionAttendances: React.FC = () => {
     setIsSaving(true);
     try {
       const defaults: Record<string, string | null> = {};
-      profiles.forEach(p => { defaults[p.id] = p.position ?? null; });
-      await saveAllPresence(selectedSessionId, localPresence, defaults);
+      const positions: Record<string, string | null> = {};
+      profiles.forEach(p => {
+        defaults[p.id] = p.position ?? null;
+        positions[p.id] = localPositions[p.id] || null;
+      });
+      await saveAllPresence(selectedSessionId, localPresence, defaults, positions);
     } finally {
       setIsSaving(false);
     }
@@ -199,10 +211,14 @@ const CommissionAttendances: React.FC = () => {
     await updatePosition(attendanceId, position);
   };
 
-  const getDisplayPosition = (profileId: string) => {
+  const getDisplayPosition = (profileId: string) => localPositions[profileId] ?? "";
+
+  // Enquanto a presença não foi gravada o registro ainda não existe: o cargo fica
+  // no estado local e vai junto no "Gravar Presenças". Já existindo, grava direto.
+  const handleSelectPosition = (profileId: string, position: string) => {
+    setLocalPositions(prev => ({ ...prev, [profileId]: position }));
     const attendance = attendances.find(a => a.profile_id === profileId);
-    if (attendance?.position_override) return attendance.position_override;
-    return profiles.find(p => p.id === profileId)?.position ?? "";
+    if (attendance) handleUpdatePosition(attendance.id, position);
   };
 
   // OCR
@@ -450,10 +466,7 @@ const CommissionAttendances: React.FC = () => {
                             <TableCell>
                               <Select
                                 value={displayPosition}
-                                onValueChange={(value) =>
-                                  attendance && handleUpdatePosition(attendance.id, value)
-                                }
-                                disabled={!attendance}
+                                onValueChange={(value) => handleSelectPosition(profile.id, value)}
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Selecione a posição" />
