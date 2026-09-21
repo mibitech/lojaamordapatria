@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { ImageUpload, ImageItem } from '@/components/ImageUpload';
 import { useProfiles, Profile } from '@/hooks/useProfiles';
 import { useCommemorationDates } from '@/hooks/useCommemorationDates';
 import { useForm } from 'react-hook-form';
@@ -48,6 +50,7 @@ import {
   Calendar as CalendarIcon,
   Pencil,
   X,
+  Camera,
 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -87,6 +90,7 @@ const CommissionProfiles: React.FC = () => {
   const { profiles, loading, updateProfile } = useProfiles();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [profileImages, setProfileImages] = useState<ImageItem[]>([]);
   const { dates, loadDates, createDate, updateDate, deleteDate } = useCommemorationDates(editingProfile?.id || undefined);
   
   // States for commemoration dates
@@ -217,6 +221,8 @@ const CommissionProfiles: React.FC = () => {
       graduation: (profile as any).graduation ?? 'Aprendiz',
     });
     
+    setProfileImages(profile.photo_url ? [profile.photo_url] : []);
+
     // Load commemoration dates for this profile
     loadDates(profile.id);
     
@@ -315,11 +321,42 @@ const CommissionProfiles: React.FC = () => {
     }
   };
 
+  /**
+   * Sobe a foto escolhida e devolve a URL pública. O caminho usa o id do perfil
+   * (e não o do usuário) porque a diretoria edita irmãos que podem não ter conta.
+   */
+  const uploadProfilePhoto = async (profileId: string, file: File) => {
+    const extension = file.name.split('.').pop();
+    const filePath = `${profileId}/avatar.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('profiles')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('profiles').getPublicUrl(filePath);
+
+    // Query string evita que o navegador sirva a foto antiga do cache
+    return `${publicUrl}?v=${Date.now()}`;
+  };
+
   const onSubmit = async (data: ProfileFormData) => {
     if (!editingProfile) return;
 
     try {
+      let photoUrl = editingProfile.photo_url ?? null;
+
+      if (profileImages.length === 0) {
+        photoUrl = null;
+      } else if (profileImages[0] instanceof File) {
+        photoUrl = await uploadProfilePhoto(editingProfile.id, profileImages[0]);
+      }
+
       await updateProfile(editingProfile.id, {
+        photo_url: photoUrl,
         cim: data.cim || null,
         full_name: data.full_name,
         email: data.email || null,
@@ -333,6 +370,7 @@ const CommissionProfiles: React.FC = () => {
       } as any);
 
       setIsDialogOpen(false);
+      setProfileImages([]);
       reset();
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -593,6 +631,25 @@ const CommissionProfiles: React.FC = () => {
             <DialogTitle>Editar Perfil</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Mesma foto que o irmão vê no próprio perfil (profiles.photo_url) */}
+            <div className="space-y-3 pb-4 border-b border-border">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                Foto do Irmão
+              </Label>
+              <ImageUpload
+                images={profileImages}
+                onImagesChange={setProfileImages}
+                maxImages={1}
+                maxSizeMB={5}
+                accept="image/png,image/jpeg,image/jpg"
+              />
+              <p className="text-xs text-muted-foreground">
+                Recomendado: imagem quadrada de pelo menos 400x400px. Esta é a mesma foto
+                exibida no perfil do irmão.
+              </p>
+            </div>
+
             <div>
               <Label htmlFor="cim">CIM — Código de Identificação Maçônica</Label>
               <Input
@@ -949,7 +1006,14 @@ const CommissionProfiles: React.FC = () => {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setProfileImages([]);
+                  setIsDialogOpen(false);
+                }}
+              >
                 Cancelar
               </Button>
               <Button type="submit">
