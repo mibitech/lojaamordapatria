@@ -117,6 +117,89 @@ const MasterListItem = ({
   </button>
 );
 
+const MasterDetail = ({
+  master,
+  officers,
+  loadingOfficers,
+}: {
+  master: WorshipfulMaster;
+  officers: MasterOfficer[];
+  loadingOfficers: boolean;
+}) => (
+  <div className="space-y-6">
+    {/* Venerável em destaque */}
+    <Card className="border-primary/20 bg-gradient-to-br from-card to-primary/5 shadow-lg">
+      <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-start md:p-8">
+        <Avatar className="h-28 w-28 shrink-0 border-4 border-primary/20">
+          <AvatarImage src={resolvePhoto(master.photo_url)} alt={master.name} />
+          <AvatarFallback className="bg-primary/10 text-2xl font-semibold text-primary">
+            {getInitials(master.name)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 text-center sm:text-left">
+          <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            <Badge variant="default">
+              <Crown className="mr-1 h-3 w-3" />
+              {POSITION_LABELS.veneravel.full}
+            </Badge>
+            <Badge variant="outline" className="border-primary font-mono text-primary">
+              {formatTerm(master.installation_year)}
+            </Badge>
+            {master.is_active && <Badge variant="secondary">Gestão atual</Badge>}
+          </div>
+
+          <h2 className="text-2xl font-bold">{master.name}</h2>
+
+          {master.bio && (
+            <p className="mt-3 leading-relaxed text-muted-foreground">{master.bio}</p>
+          )}
+
+          {master.achievements && (
+            <div className="mt-4 rounded-lg bg-muted/50 p-4 text-left">
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                Principais Realizações
+              </h3>
+              <p className="text-sm text-muted-foreground">{master.achievements}</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Diretoria do período */}
+    <div>
+      <h3 className="mb-4 flex items-center text-lg font-semibold">
+        <Users className="mr-2 h-5 w-5 text-primary" />
+        Diretoria {formatTerm(master.installation_year)}
+      </h3>
+
+      {loadingOfficers ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-[84px] animate-pulse rounded-lg bg-muted" />
+          ))}
+        </div>
+      ) : officers.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="px-6 py-10 text-center">
+            <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+            <p className="text-sm text-muted-foreground">
+              A diretoria deste período ainda não foi cadastrada.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {officers.map((officer) => (
+            <OfficerCard key={officer.id} officer={officer} />
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 export default function WorshipfulMasters() {
   const { user } = useAuth();
   const {
@@ -187,18 +270,38 @@ export default function WorshipfulMasters() {
                 <Calendar className="mr-2 h-4 w-4" />
                 Administrações ({masters.length})
               </h2>
-              {masters.map((master) => (
-                <MasterListItem
-                  key={master.id}
-                  master={master}
-                  isSelected={master.id === selectedMasterId}
-                  onSelect={() => selectMaster(master.id)}
-                />
-              ))}
+              {masters.map((master) => {
+                const isSelected = master.id === selectedMasterId;
+
+                return (
+                  <div key={master.id} className="space-y-2">
+                    <MasterListItem
+                      master={master}
+                      isSelected={isSelected}
+                      onSelect={() => selectMaster(master.id)}
+                    />
+
+                    {/* No mobile a diretoria abre junto do venerável escolhido; a
+                        partir de lg ela volta para a coluna da direita. */}
+                    {isSelected && selectedMaster && (
+                      <section
+                        aria-live="polite"
+                        className="pb-2 pl-3 border-l-2 border-primary/30 lg:hidden"
+                      >
+                        <MasterDetail
+                          master={selectedMaster}
+                          officers={officers}
+                          loadingOfficers={loadingOfficers}
+                        />
+                      </section>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
 
-            {/* Detalhe da administração selecionada */}
-            <section aria-live="polite">
+            {/* Detalhe da administração selecionada (somente desktop) */}
+            <section aria-live="polite" className="hidden lg:block">
               {!selectedMaster ? (
                 <Card className="border-dashed">
                   <CardContent className="flex flex-col items-center justify-center gap-3 px-6 py-20 text-center">
@@ -211,87 +314,11 @@ export default function WorshipfulMasters() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="space-y-6">
-                  {/* Venerável em destaque */}
-                  <Card className="border-primary/20 bg-gradient-to-br from-card to-primary/5 shadow-lg">
-                    <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-start md:p-8">
-                      <Avatar className="h-28 w-28 shrink-0 border-4 border-primary/20">
-                        <AvatarImage
-                          src={resolvePhoto(selectedMaster.photo_url)}
-                          alt={selectedMaster.name}
-                        />
-                        <AvatarFallback className="bg-primary/10 text-2xl font-semibold text-primary">
-                          {getInitials(selectedMaster.name)}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 text-center sm:text-left">
-                        <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                          <Badge variant="default">
-                            <Crown className="mr-1 h-3 w-3" />
-                            {POSITION_LABELS.veneravel.full}
-                          </Badge>
-                          <Badge variant="outline" className="border-primary font-mono text-primary">
-                            {formatTerm(selectedMaster.installation_year)}
-                          </Badge>
-                          {selectedMaster.is_active && (
-                            <Badge variant="secondary">Gestão atual</Badge>
-                          )}
-                        </div>
-
-                        <h2 className="text-2xl font-bold">{selectedMaster.name}</h2>
-
-                        {selectedMaster.bio && (
-                          <p className="mt-3 leading-relaxed text-muted-foreground">
-                            {selectedMaster.bio}
-                          </p>
-                        )}
-
-                        {selectedMaster.achievements && (
-                          <div className="mt-4 rounded-lg bg-muted/50 p-4 text-left">
-                            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
-                              Principais Realizações
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedMaster.achievements}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Diretoria do período */}
-                  <div>
-                    <h3 className="mb-4 flex items-center text-lg font-semibold">
-                      <Users className="mr-2 h-5 w-5 text-primary" />
-                      Diretoria {formatTerm(selectedMaster.installation_year)}
-                    </h3>
-
-                    {loadingOfficers ? (
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        {[...Array(6)].map((_, i) => (
-                          <div key={i} className="h-[84px] animate-pulse rounded-lg bg-muted" />
-                        ))}
-                      </div>
-                    ) : officers.length === 0 ? (
-                      <Card className="border-dashed">
-                        <CardContent className="px-6 py-10 text-center">
-                          <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
-                          <p className="text-sm text-muted-foreground">
-                            A diretoria deste período ainda não foi cadastrada.
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        {officers.map((officer) => (
-                          <OfficerCard key={officer.id} officer={officer} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <MasterDetail
+                  master={selectedMaster}
+                  officers={officers}
+                  loadingOfficers={loadingOfficers}
+                />
               )}
             </section>
           </div>
