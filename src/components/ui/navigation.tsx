@@ -135,8 +135,8 @@ export const Navigation: React.FC = () => {
                 <Triangle className="w-6 h-6 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-xl text-primary">Loja Maçonica Nº 306</span>
-                <span className="text-sm text-muted-foreground">Amor da Pátria</span>
+                <span className="font-bold text-xl text-primary">Amor da Pátria</span>
+                <span className="text-sm text-muted-foreground">Loja Maçonica Nº 306</span>
               </div>
             </Link>
           </div>
@@ -158,8 +158,8 @@ export const Navigation: React.FC = () => {
               <span className="text-sm text-muted-foreground">Loja Maçonica Nº 306</span>
             </div>
             <div className="flex sm:hidden flex-col items-center">
-              <span className="font-bold text-lg text-primary">Loja Maçonica Nº 306</span>
-              <span className="text-xs text-muted-foreground">Amor da Pátria</span>
+              <span className="font-bold text-lg text-primary">Amor da Pátria</span>
+              <span className="text-xs text-muted-foreground">Loja Maçonica Nº 306</span>
             </div>
           </Link>
 
